@@ -1,0 +1,12 @@
+# Upstream reference dictionaries: cloned via instructions in
+# references/README.md. Their own histories don't belong here.
+references/eldamo/
+references/sindict/
+
+# Python
+__pycache__/
+*.pyc
+
+# Editors
+*~
+*.sw*
