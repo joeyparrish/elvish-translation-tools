@@ -3,32 +3,41 @@
 Reference data for maintaining the Sindarin translation of Shaka Player
 (`ui/locales/sjn-translations.yaml` in the shaka-player repo).
 
-## Contents
+## In this folder
 
-- `eldamo/` -- Paul Strack's Eldamo lexicon (git clone of
-  https://github.com/pfstrack/eldamo). The data file is at
-  `eldamo/src/data/eldamo-data.xml` (~30 MB, 35k+ entries spanning Quenya,
-  Sindarin, and earlier conceptual stages). Each entry has reliability
-  markers (attested, neologism, reconstructed, deprecated). Query Sindarin
-  entries by `l="s"`, Quenya by `l="q"` or `l="nq"` (Neo-Quenya).
 - `mutations.md` -- Summary of Sindarin consonant mutations (soft / nasal
   / hard / mixed / liquid) and what triggers each.
 - `grammar.md` -- Sindarin morphology / syntax reference: verb forms,
   pluralization, word order, pronouns, common prepositions, derivational
   affixes, and translation pitfalls.
 
+## Upstream lexicon (not in repo)
+
+The compact TSVs under `../data/` are extracted from Paul Strack's
+**Eldamo** lexicon, which is too large (~30 MB XML, 35k+ entries) to
+vendor here. The extracted TSVs are committed; the source XML is not.
+
+To regenerate the TSVs (e.g. after Eldamo updates upstream), clone it
+into this folder and run the extractor:
+
+    git clone https://github.com/pfstrack/eldamo.git
+    python3 ../scripts/extract.py
+
+The clone path `references/eldamo/` is gitignored.
+
+Eldamo covers Quenya, Sindarin, Noldorin, Gnomish, and earlier
+conceptual stages, with reliability markers (attested, neologism,
+reconstructed, deprecated, etc.).
+
 ## How to query
 
-Quick word lookups in Eldamo:
+For everyday use, prefer `../scripts/lookup.py` (subcommands: lookup,
+search, check, cognates, forms) which reads the extracted TSVs.
+
+For ad hoc XML inspection after cloning Eldamo:
 
     grep -m 5 'l="s" v="WORD"' eldamo/src/data/eldamo-data.xml
-
-For English-to-Sindarin search, grep on `gloss=`:
-
     grep 'l="s"' eldamo/src/data/eldamo-data.xml | grep -i 'gloss="[^"]*MEANING'
-
-Higher-level access via `scripts/lookup.py` (which reads the extracted
-TSVs in `data/`, not the XML directly).
 
 ## Licensing
 
