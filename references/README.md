@@ -10,6 +10,9 @@ languages. Used as the substrate for any specific translation effort.
 - `grammar.md` -- Sindarin morphology / syntax reference: verb forms,
   pluralization, word order, pronouns, common prepositions, derivational
   affixes, and translation pitfalls.
+- `translation-schema.md` -- v1 schema for translation source files
+  (YAML), with per-element provenance. The recommended structure for
+  any project consuming this framework.
 
 ## Upstream lexicon (not in repo)
 
