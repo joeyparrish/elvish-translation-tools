@@ -1,7 +1,7 @@
-# Sindarin Translation Reference Materials
+# Sindarin / Quenya Translation Reference Materials
 
-Reference data for maintaining the Sindarin translation of Shaka Player
-(`ui/locales/sjn-translations.yaml` in the shaka-player repo).
+Reference data for translation projects targeting Tolkien's Elvish
+languages. Used as the substrate for any specific translation effort.
 
 ## In this folder
 
