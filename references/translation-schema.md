@@ -216,6 +216,48 @@ The per-element breakdown is the load-bearing addition. Everything
 else is documentation that a careful translator was going to write
 somewhere anyway; this just puts it next to the translation.
 
+## Script encoding
+
+The `sjn.tengwar` field (and equivalents for other script-using
+languages) should contain text encoded in the **ConScript Unicode
+Registry (CSUR)** Private Use Area allocation for Tengwar:
+**U+E000–U+E07F**. This is the encoding used by the Tengwar Telcontar
+font and supported by the [Tecendil](https://www.tecendil.com)
+transliterator.
+
+Why CSUR:
+
+- Tengwar is not yet in the official Unicode Standard. CSUR is the
+  closest thing to a stable, font-portable codepoint allocation.
+- Source text remains meaningful: each tengwa has its own codepoint, so
+  the underlying string is searchable, comparable, and survives
+  copy-paste between CSUR-aware contexts.
+- Likely candidate for a one-way migration to whatever official
+  encoding eventually arrives.
+
+Alternatives and when they might apply:
+
+- **Font-specific ASCII (Annatar, Tengwar Parmaite, Tengwar Sindarin)**
+  -- you type Latin characters that the font remaps to glyphs. Each
+  font has its own keymap, and the source text is meaningless without
+  the right font. Avoid unless you have a hard constraint from a
+  pre-Unicode toolchain.
+- **Render at build time from romanized only** -- leave `tengwar` empty
+  and produce images / SVG from `roman` during the build. Trades off
+  source cleanliness against a build-time transliterator dependency.
+  Reasonable if the consuming application can ship images instead of
+  fonts.
+
+How to edit `tengwar` fields safely:
+
+- Use a CSUR-aware font in your editor (Tengwar Telcontar works in
+  gedit, VS Code with the right font setting, etc.).
+- Use Tecendil to transliterate from romanized → CSUR, then paste the
+  output into the `tengwar` field.
+- Never hand-modify Tengwar PUA characters without a font; they appear
+  as boxes or replacement characters in plain text contexts and editing
+  them blind corrupts the encoding.
+
 ## Versioning
 
 This is v1. Likely evolution points:

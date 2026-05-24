@@ -162,6 +162,10 @@ Key enums to know:
 
 When filling out `elements[]`, the source citation should be whatever `lookup.py check` reports (e.g. `Ety/NOR`, `PE17/174`, `LotR/0339`).
 
+## Script encoding (Tengwar)
+
+The `sjn.tengwar` field uses CSUR (ConScript Unicode Registry) Tengwar at U+E000–U+E07F, the encoding supported by the Tengwar Telcontar font and the Tecendil transliterator. Do not hand-edit these characters; they render as boxes without a CSUR-aware font. Defer Tengwar production to a transliterator (Tecendil) or to the human editor working with the font installed. See `${CLAUDE_SKILL_DIR}/references/translation-schema.md` for alternative encodings.
+
 ## Review checklist
 
 For each entry being reviewed or proposed:
