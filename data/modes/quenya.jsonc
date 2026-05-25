@@ -1,0 +1,349 @@
+// -----------------------------------------------------------------------------
+//
+// QUENYA MODE (aka "classical mode")
+//
+// -----------------------------------------------------------------------------
+
+// See http://fan.theonering.net/~rolozo/tengwar/tengwar/quenya.htm
+// See http://www.elvish.org/elm/spelling.html
+
+// Check: http://www.elvish.org/gwaith/ringpoemq.htm
+// Check: http://at.mansbjorkman.net/teng_quenya.htm
+
+/*
+Endorion Dedication - DTS 62 
+
+Elen síla lúmenn" omentielmo
+
+short carrier + acute accent - lambe + acute accent - númen
+
+silme + double dots - lambe + circumflex accent
+
+lambe + double left curl - malta + acute accent - númen + under bar
+
+short carrier + right curl - malta + acute accent - anto + single over-dot - short carrier + acute
+accent - lambe - malta + right curl. 
+
+	
+	
+*/
+
+{
+  // Short-name
+  "name": "quenya",
+  "languageCode": "qya", // ISO 639-3
+
+  "normalizeVowels": true,
+
+  "rrule": true,
+
+  /* the choice between the tengwar, rómen and óre to represent the sound r is
+  based on position in a word. When preceding a vowel (as initially, or between
+  two vowels) or a semivowel (like y or w), rómen was used; but when final, or
+  preceding a full consonant, óre was used.  --
+  http://www.elvish.org/gwaith/ringpoemq.htm */
+
+  "preprocess": {
+    // Disambiguate "qu" -> "q"
+    "qu": "q",
+
+    // Disambiguate "z" -> "ss" ("hriZ": v, to snow)
+    "z": "ss",
+    // Suppress intraword dash
+    "([^0-9\\s]+)-([^0-9\\s]+)": "$1$2"
+  },
+
+  "map": {
+    // ----------------------------------------------------------------------------
+    //
+    // VOWELS
+    //
+
+    // Long vowels
+    // Tolkien, in the Namarie jacket uses long carrier for U (suurinen) and O
+    // (uunootime) and doubled tehta for E (yeeni)
+    "â": "{aara}[triple-dot-above]",
+    "ê": "{aara}[acute]",
+    "î": "{aara}[dot-above]",
+    "ô": "{aara}[right-curl]",
+    "û": "{aara}[left-curl]",
+
+    // Alternate long-vowels
+    "à": "[reversed-triple-dot-above]",
+    "è": "[double-acute]",
+    "ì": "[double-dot-above]",
+    "ò": "[double-acute]",
+    "ù": "[double-left-curl]",
+    //	"^û": 		"{aara}[left-curl]{}",		// http://at.mansbjorkman.net/teng_quenya.htm#vow_long
+
+    // ----------------------------------------------------------------------------
+    //
+    // DIPHTHONGS
+    //
+
+    "ae": "[triple-dot-above]{yanta}", // ??
+    "ai": "{yanta}[triple-dot-above]",
+    "aia": "{yanta}[triple-dot-above]{telco}[triple-dot-above]",
+    "au": "{uure}[triple-dot-above]",
+    // "auy": "{uure}[triple-dot-above]{anna}[double-dot-below]",
+    "aw$": "[triple-dot-above]{vala}",
+
+    "ea": "[acute]{telco}[triple-dot-above]", // ??
+    "ei": "{yanta}[acute]", // ??
+    "eo": "[acute]{telco}[right-curl]", // ??
+    "eoi": "[acute]{yanta}[right-curl]",
+    "eu": "{uure}[acute]",
+    "êa": "{aara}[acute]{telco}[triple-dot-above]",
+    // "êe": // Looks good by default (double-[acute] over long carrier)
+    "êi": "{aara}[acute]{telco}[dot-above]",
+    "êo": "{aara}[acute]{telco}[right-curl]",
+    "êu": "{aara}[acute]{telco}[left-curl]",
+
+    "ia": "[dot-above]{telco}[triple-dot-above]", // ??
+    "iau": "[dot-above]{telco}[triple-dot-above]{telco}[left-curl]", // "iaun"
+    "ie": "[dot-above]{telco}[acute]",
+    "iê": "[dot-above]{aara}[acute]",
+    "iêa": "[dot-above]{aara}[acute]{telco}[right-curl]",
+    "iêe": "[dot-above]{aara}[double-acute]",
+    "iêi": "[dot-above]{aara}[acute]{telco}[dot-above]",
+    "iêo": "[dot-above]{aara}[acute]{telco}[right-curl]", // "morniêo"
+    "iêu": "[dot-above]{aara}[acute]{telco}[left-curl]",
+    "îe": "{aara}[dot-above]{telco}[acute]",
+    "io": "[dot-above]{telco}[right-curl]", // silmarilion
+    "iu": "{uure}[dot-above]{}", // ciuca (thigh)
+
+    "oa": "[right-curl]{telco}[triple-dot-above]", // hroa
+    "oe": "{yanta}[right-curl]", // ??
+    "oi": "{yanta}[right-curl]",
+    "oia": "{yanta}[right-curl]{telco}[triple-dot-above]",
+    "oio": "{yanta}[right-curl]{telco}[right-curl]",
+
+    "ou": "{telco}[right-curl]{telco}[left-curl]", // Not in Quenya, but for loanwords
+
+    "ui": "{yanta}[left-curl]",
+    "uia": "{yanta}[left-curl]{telco}[triple-dot-above]", // "uial"
+    "uiu": "{yanta}[left-curl]{telco}[left-curl]",
+    "ua": "[left-curl]{telco}[triple-dot-above]",
+    "uo": "[left-curl]{telco}[right-curl]", // Genitive of "loa" is "luo"
+
+    "ya": "{anna}[double-dot-below][triple-dot-above]",
+    "ye": "{anna}[double-dot-below][acute]",
+    "yo": "{anna}[double-dot-below][right-curl]",
+    "yu": "{anna}[double-dot-below][left-curl]",
+
+    // "yâ": "{anna}[double-dot-below]{aara}[triple-dot-above]",
+    // "yê": "{anna}[double-dot-below]{aara}[acute]",
+    // "yû": "{anna}[double-dot-below]{aara}[left-curl]",
+    // "yô": "{anna}[double-dot-below]{aara}[right-curl]",
+
+    // Alternate long-vowels
+    // Tolkien"s Namarie has example of both double-e and long-carrier (yeeni)
+    "yà": "{anna}[double-dot-below]{aara}[reversed-triple-dot-above]",
+    "yè": "{anna}[double-dot-below][double-acute]",
+    "yù": "{anna}[double-dot-below][double-left-curl]",
+    "yò": "{anna}[double-dot-below][double-acute]",
+
+    // ----------------------------------------------------------------------------
+    //
+    // CONSONANTS
+    //
+
+    "b": "{umbar}", // Rare in Quenya, usually it"s "mb"
+    "c": "{calma}",
+    "d": "{ando}", // Used in Spanish/Portuguese, in quenya it"s "nd"
+    "dh": "{anto}",
+    "f": "{formen}",
+    "g": "{ungwe}", // Rare in Quenya, but used by Kun Aguëro
+
+    "h": "{harma}", // other h, in between vowels
+    "χ": "{harma}", // CHI -- GREEK SMALL LETTER CHI
+    "ha": "{hyarmen}[triple-dot-above]",
+    "hai": "{hyarmen}{anna}[triple-dot-above]",
+    "hau": "{hyarmen}{uure}[triple-dot-above]",
+    "he": "{hyarmen}[acute]",
+    "hea": "{hyarmen}[acute]{telco}[triple-dot-above]",
+    "hi": "{hyarmen}[dot-above]",
+    "hie": "{hyarmen}[dot-above]{telco}[acute]",
+    "hiu": "{hyarmen}[dot-above]{telco}[left-curl]",
+    "ho": "{hyarmen}[right-curl]",
+    "hoa": "{hyarmen}[right-curl]{telco}[triple-dot-above]",
+    "hu": "{hyarmen}[left-curl]",
+    "hua": "{hyarmen}[left-curl]{telco}[triple-dot-above]",
+    "hue": "{hyarmen}[left-curl]{telco}[acute]",
+    "hui": "{hyarmen}[left-curl]{telco}[dot-above]",
+    "huo": "{hyarmen}[left-curl]{telco}[right-curl]",
+    "hâ": "{hyarmen}{aara}[triple-dot-above]",
+    "hê": "{hyarmen}{aara}[acute]",
+    "hî": "{hyarmen}{aara}[dot-above]",
+    "hô": "{hyarmen}{aara}[right-curl]",
+    "hû": "{hyarmen}{aara}[left-curl]",
+
+    "hl": "{halla}{lambe}",
+    "hr": "{halla}{roomen}",
+
+    "k": "{calma}", // Kun Aguëro uses quesse, but k/c should be treated
+    // as identical for Quenya/Middle-Quenya
+    "kw": "{quesse}",
+    "hw": "{hwesta}",
+    "l": "{lambe}",
+    "ld": "{alda}",
+    "m": "{malta}",
+    "n": "{nuumen}",
+    "ñ": "{noldo}", // Very rare
+    "ngw": "{ungwe}",
+    "ñw": "{nwalme}", // Very rare
+    "^nw": "{nwalme}", // "NWalmë"
+    // Dreamingfifi:
+    // > So, the history of Nwalme and the NW that it represents is that it
+    // > used to be pronounced /ŋʷ/ and was Romanized ÑW. It's a sound in
+    // > Quenya that only occurred at the beginnings of words. In the Exilic
+    // > dialect of Quenya, the word-initial Ñ became N. The only source of NW
+    // > at the beginnings of words is this old /ŋʷ/. Therefore, the only way
+    // > to use Nwalme is to have it used for word-initial NW and ÑW.
+
+    // > Therefore, you'd never write "Vanwa" with Nwalme. Instead, the NW
+    // > would be rendered with Númen and Vilya.
+
+    "p": "{parma}",
+    "piu": "{parma}[dot-above]{telco}[left-curl]",
+    "ph": "{formen}", // Very rare. "PHanto" (whale)
+    "py": "{parma}[double-dot-below]",
+    // In the Quenya phonotactic, "qu" is always followed by a vowel
+    // ("aqua", "enquee", "quendil", "qui")
+    // "q" can also be followed by "a" ("neldendelqa") or "i" ("qilda").
+    // In both cases, "quesse" represent the "q" and "qu" digraph.
+    "qu": "{quesse}", // Swallow the "u"
+    "q": "{quesse}",
+
+    "r": "{oore}", // Lonely R is not voiced, so use {oore}
+    // The rules below (ra, re...) handle R + vowel
+    "r$": "{oore}",
+
+    // To account for diphthongs (e.g. "namaRIE"), append the special "null tengwa": {}
+    // If the next letter is a vowel, it will be replaced by a short/long carrier,
+    // ignored otherwise
+
+    "ra": "{roomen}[triple-dot-above]{}",
+    "rai": "{roomen}{yanta}[triple-dot-above]",
+    "rau": "{roomen}{uure}[triple-dot-above]", // Valarauco
+    "re": "{roomen}[acute]{}",
+    "ri": "{roomen}[dot-above]{}",
+    "ro": "{roomen}[right-curl]{}",
+    "ru": "{roomen}[left-curl]{}",
+    "râ": "{roomen}{aara}[triple-dot-above]{}",
+    "rê": "{roomen}{aara}[acute]{}",
+    "rî": "{roomen}{aara}[dot-above]{}",
+    "rô": "{roomen}{aara}[right-curl]{}",
+    "rû": "{roomen}{aara}[left-curl]{}",
+
+    //	"re$":		"{oore}[acute]",
+    "rb": "{roomen}{umbar}", // From LotR App E
+    "rd": "{arda}",
+
+    "s": "{silme}",
+    // 	"s$":		"[swash-hook]",
+    "t": "{tinco}",
+    "th": "{thuule}",
+    "þ": "{thuule}",
+    "v": "{vala}",
+    "w": "{vilya}",
+    "x": "{calma}[right-curl-below]",
+    "y": "{anna}[double-dot-below]",
+    "z": "{esse}",
+
+    // Clusters with "s"
+    // "st": "{silme}{tinco}", // "puSTa"
+    // "sty": "{silme}{tinco}[double-dot-below]", //	"iSTYa"
+    // "sc": "{silme}{calma}", // "ruSCo"
+    // "sq": "{silme}{quesse}", // "uSQe"
+    "sw": "{thuule}{vilya}", // "hiSWa"
+    "rs": "{oore}{thuule}", // "uRSa"
+
+    // Combinations with "m/n" -- nasalized consonants
+    "nc": "{anca}",
+    "nk": "{anca}",
+    "nd": "{ando}",
+    "ng": "{anga}",
+    "nt": "{anto}",
+    "nq": "{unque}", // No "nqu", due to preprocessor
+    "mb": "{umbar}",
+    "mp": "{ampa}",
+
+    // Combinations with "s"
+    "ts": "{tinco}{hook}",
+    "ps": "{parma}{hook}",
+    "cs": "{calma}[right-curl-below]", // Rare: "CSara"
+
+    // Combinations with "y"
+    "ndy": "{ando}[double-dot-below]", // "iNDYel"
+    "nty": "{anto}[double-dot-below]", // "eNTYa"
+    "ny": "{nuumen}[double-dot-below]", // "amaNYa"
+    "my": "{malta}[double-dot-below]", // "aMYa"
+    "ty": "{tinco}[double-dot-below]", // "TYe"
+    "ry": "{roomen}[double-dot-below]", // "AnaRYa"
+    "ryâ": "{roomen}[double-dot-below]{aara}[triple-dot-above]{}",
+    "ryê": "{roomen}[double-dot-below]{aara}[acute]{}",
+    "ryû": "{roomen}[double-dot-below]{aara}[left-curl]{}",
+    "ryô": "{roomen}[double-dot-below]{aara}[right-curl]{}",
+    "ryà": "{roomen}[double-dot-below]{aara}[reversed-triple-dot-above]{}",
+    "ryè": "{roomen}[double-dot-below][double-acute]{}",
+    "ryù": "{roomen}[double-dot-below][double-left-curl]{}",
+    "ryò": "{roomen}[double-dot-below][double-acute]{}",
+    "ly": "{lambe}[double-dot-inside]", // "aLYa"
+    "hy": "{hyarmen}[double-dot-below]", // "HYa"
+
+    // ----------------------------------------------------------------------------
+    //
+    // GEMINATED CONSONANTS.
+
+    "cc": "{calma}[bar-below]", // "raCCa"
+    // 	"ck":		"{calma}[bar-below]",		// 				n/a
+    "kk": "{calma}[bar-below]", // "eKKo"
+    // 	"dd":		"{ando}[bar-below]",			// 				n/a
+    "ff": "{formen}[bar-below]", // "effírië" (rare)
+    "ll": "{lambe}[bar-inside]", // "haLLa"
+    "mm": "{malta}[bar-below]", // "eMMa"
+    "nn": "{nuumen}[bar-below]", // "aNNa"
+    "pp": "{parma}[bar-below]", // "naPPa"
+    "rr": "{roomen}[bar-below]", // "Palarran"
+    "ss": "{esse}", // "aSSa"
+    "tt": "{tinco}[bar-below]", // "aTTa"
+
+    // Special case
+    // The e verbs ethenta- and all its forms shouldn't be spelled with
+    // þúle, but with {tinco}{harma}[e] because it contains the prefix et-.
+    "^ethent": "{telco}[acute]{tinco}{hyarmen}[acute]{anto}[triple-dot-above]"
+  },
+
+  "words": {
+    // Jakob Teuber argues that morpheme boundaries should not be taken
+    // into account
+    // "aselye": "{telco}[triple-dot-above]{alt-silme}{telco}[acute]{lambe}[double-dot-inside][acute]",
+
+    // Words using þúle
+    "hísilóme": "Híþilóme",
+    "isil": "Iþil",
+    "isildur": "Iþildur",
+    "isilmo": "Iþilmo",
+    "nan-tasarion": "Nan-taþarion",
+    "nísimaldar": "Níþimaldar",
+    "nísinen": "Níþinen",
+    "sangahyando": "Þangahyando",
+    "sauron": "Þauron",
+    "serinde": "Þerinde",
+    "sinda": "Þinda",
+    "sindar": "Þindar",
+    "sindarin": "Þindarin",
+    "sindacollo": "Þindacollo",
+    "sindicollo": "Þindicollo",
+    "singollo": "Þingollo",
+    "sorontar": "Þorontar",
+    "sorontil": "Þorontil",
+    "soronto": "Þoronto",
+    "soronúme": "Þoronúme",
+    "súlimo": "Þúlimo",
+    "tarmasundar": "Tarmaþundar",
+    "tasarion": "taþarion", // willows
+    "tasarinan": "Taþarinan"
+  }
+}

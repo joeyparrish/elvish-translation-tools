@@ -1,0 +1,108 @@
+{
+  "name": "beleriand",
+  "languageCode": "sjn", // Sindarin
+
+  "normalizeVowels": true,
+
+  "map": {
+    //
+    // VOWELS
+    //
+    "a": "{osse}",
+    "e": "{yanta}",
+    "i": "{telco}", // NOTE: A {dot-above} is optional and mostly used in handwriting
+    "o": "{anna}",
+    "u": "{uure}",
+
+    "â": "{osse}[acute]",
+    "ê": "{yanta}[acute]",
+    "î": "{telco}[acute]",
+    "ô": "{anna}[acute]",
+    "û": "{uure}[acute]",
+    "ŷ": "{alt-silme-nuquerna}[acute]",
+
+    //
+    // DIPHTHONGS
+    //
+    "ae": "{osse}[yanta-above]", // as per guido_laudenzi
+    "oe": "{anna}[yanta-above]",
+    "ai": "{osse}[double-dot-above]",
+    "ei": "{yanta}[double-dot-above]",
+    "ui": "{uure}[double-dot-above]",
+    "au": "{osse}[over-twist]",
+    "aw": "{osse}[over-twist]",
+
+    //
+    // CONSONANTS
+    //
+    "b": "{umbar}",
+    "c": "{calma}", // {quesse} in Classical
+    "d": "{ando}",
+    "dh": "{anto}",
+    "f": "{formen}",
+    "f$": "{ampa}",
+    "g": "{anga}", // {ungwe} in Classical
+    "h": "{hyarmen}",
+    "k": "{calma}",
+    "l": "{lambe}",
+    "^lh": "{alda}",
+    "m": "{vala}", // {malta} in Classical
+    "n": "{oore}", // {nuumen} in Classical
+    "ng": "{anga}[bar-above]", // {ungwe}[bar-above] in Classical
+    // "ng$": "{noldo}",  // as per guido_laudenzi, final ng should be {anga}[bar-above]
+    "^ng": "{noldo}", // as per guido_laudenzi
+    "p": "{parma}",
+    "ph": "{formen}",
+    "r": "{roomen}",
+    "^rh": "{arda}",
+    "s": "{silme}",
+    "t": "{tinco}",
+    "th": "{thuule}",
+    "v": "{ampa}",
+    "w": "{vilya}", // {vala} in Classical
+    "y": "{silme-nuquerna}",
+    "z": "{esse-nuquerna}",
+
+    //
+    // Nasal
+    //
+    "nt": "{tinco}[bar-above]",
+    "nd": "{ando}[bar-above]",
+    "mp": "{parma}[bar-above]",
+    "mb": "{umbar}[bar-above]",
+    "nc": "{quesse}[bar-above]",
+    "nth": "{thuule}[bar-above]",
+    "ñg": "{ungwe}[bar-above]",
+    "ñd": "{ando}[bar-above]",
+    "ñb": "{umbar}[bar-above]",
+    "ñ": "{nwalme}",
+
+    //
+    // Labialized
+    //
+    "gw": "{anga}[over-twist]",
+    "dw": "{ando}[over-twist]",
+
+    "ch": "{harma}", // {hwesta} in Classical
+    "sh": "{harma}",
+    "qu": "{quesse}[over-twist]", // TODO: check?
+
+    //
+    // Geminated consonants.
+    //
+    // Only ss, ll, mm and nn allowed in Sindarin
+    //
+    "ss": "{esse}",
+    // "ll": "{lambe}{lambe}",
+    "mm": "{malta}", // [bar-above]{malta} in Classical
+    "nn": "{nuumen}" // [bar-above]{nuumen} in Classical
+  },
+
+  "words": {
+    "panthael": "pan{tinco}[bar-above]{hyarmen}ael",
+    "lanthir": "la{tinco}[bar-above]{hyarmen}ir",
+    "Rohan": "Rochan",
+    "Rohir": "Rochir",
+    "Rohirrim": "Rochirrim"
+  }
+}

@@ -190,7 +190,8 @@ divergences:
 All entries verified against Tecendil output for the test strings
 `gwain dwedh angwedh`, `mellon tollui`, `miria-`, `daro dîn`. Raw
 codepoint sequences from those runs are captured in
-[`../tests.md`](../tests.md) for regression purposes.
+[`../data/modes/sindarin-tests.yaml`](../data/modes/sindarin-tests.yaml)
+for regression purposes.
 
 ## Quirks observed in Tecendil output
 
@@ -211,13 +212,20 @@ longest-match-wins. Verified against Tecendil's deployed
 `sindarin.jsonc` (which is byte-identical to the GitHub master). The
 file contains both `"^ang": "[triple-dot-above]{nwalme}"` (word-start
 anchored) and `"angw": "[bar-above][over-twist][triple-dot-above]{ungwe}"`
-(unanchored, defined later). For `angwedh`, the empirical output is
-NWALME + a-tehta + VALA + ANTO + acute (matching the `^ang` rule
-followed by separate `w`/`e`/`dh` rules), not the literal `angw`
-rule's UNGWE-with-modifiers. The `angw` rule is **dead code**: it
-appears later in the file than `^ang`, and the engine never reaches
-it. Implication for engine authors: apply rules in source order;
-don't pre-sort by length.
+(unanchored, defined later). For word-initial `angwedh`, the empirical
+output is NWALME + a-tehta + VALA + ANTO + acute (matching the `^ang`
+rule followed by separate `w`/`e`/`dh` rules), not the literal `angw`
+rule's UNGWE-with-modifiers.
+
+The two rules are not redundant: `^ang` only matches at word start,
+so for words like `dangweth` "answer" (PM/395) where `angw` appears
+mid-word, the `angw` rule does fire and produces the UNGWE-with-
+modifiers glyph cluster.
+
+Implication for engine authors: apply rules in source order with
+position anchors honored; don't pre-sort by length, and don't assume
+anchored and unanchored rules are interchangeable just because their
+patterns overlap.
 
 **Context-sensitive tehta substitution**: when about to emit
 `[bar-below]` after `{lambe}`, Tecendil's engine substitutes

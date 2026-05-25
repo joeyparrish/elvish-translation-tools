@@ -1,0 +1,510 @@
+#!/usr/bin/env python3
+# Copyright 2026 Joey Parrish
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Transliterate romanized Elvish into CSUR Tengwar codepoints.
+
+Reads a Tecendil-format mode file from data/modes/ and applies its
+rules to produce CSUR Tengwar output (U+E000-U+E07F).
+
+Usage:
+    python3 scripts/transliterate.py sjn "northo lim"
+    python3 scripts/transliterate.py qya "alcarin"
+
+See references/tengwar-csur.md for the codepoint authority and rule
+semantics, references/translation-schema.md for the schema's
+expectation on the sjn.tengwar field.
+"""
+
+import argparse
+import json
+import os
+import re
+import sys
+
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODES_DIR = os.path.join(BASE, "data", "modes")
+
+# Mode short codes -> mode file basenames.
+MODE_ALIASES = {
+    "sjn": "sindarin",
+    "sindarin": "sindarin",
+    "qya": "quenya",
+    "quenya": "quenya",
+    "beleriand": "beleriand",
+}
+
+# CSUR Tengwar codepoint table, indexed by Tecendil's symbolic names.
+# Extracted from the deployed Tecendil bundle, cross-checked against
+# Michael Everson's 2001 CSUR Tengwar proposal (see references/
+# tengwar-csur.md). Entries verified empirically appear in tests.md.
+#
+# Codepoints are written as \uXXXX escapes so this source is reviewable
+# in any editor. The actual characters are in the Unicode Private Use
+# Area (U+E000-U+E07F) and render as boxes without a CSUR-aware font.
+NAME_TO_CSUR = {
+    # Tengwar (consonants and carriers) at U+E000-U+E03A
+    "tinco":              "\uE000",
+    "parma":              "\uE001",
+    "calma":              "\uE002",
+    "quesse":             "\uE003",
+    "ando":               "\uE004",
+    "umbar":              "\uE005",
+    "anga":               "\uE006",
+    "ungwe":              "\uE007",
+    "thuule":             "\uE008",
+    "formen":             "\uE009",
+    "harma":              "\uE00A",
+    "hwesta":             "\uE00B",
+    "anto":               "\uE00C",
+    "ampa":               "\uE00D",
+    "anca":               "\uE00E",
+    "unque":              "\uE00F",
+    "nuumen":             "\uE010",
+    "malta":              "\uE011",
+    "noldo":              "\uE012",
+    "nwalme":             "\uE013",
+    "oore":               "\uE014",
+    "vala":               "\uE015",
+    "anna":               "\uE016",
+    "vilya":              "\uE017",
+    "roomen":             "\uE020",
+    "arda":               "\uE021",
+    "lambe":              "\uE022",
+    "alda":               "\uE023",
+    "silme":              "\uE024",
+    "silme-nuquerna":     "\uE025",
+    "esse":               "\uE026",
+    "esse-nuquerna":      "\uE027",
+    "hyarmen":            "\uE028",
+    "hwesta-sindarinwa":  "\uE029",
+    "yanta":              "\uE02A",
+    "uure":               "\uE02B",
+    "aara":               "\uE02C",  # LONG CARRIER
+    "halla":              "\uE02D",
+    "telco":              "\uE02E",  # SHORT CARRIER
+    "osse":               "\uE032",  # STEMLESS ANNA per Everson
+    "malta-with-curl":    "\uE03A",  # MH per Everson
+
+    # Tehtar (vowel and modifier signs) at U+E040-U+E057
+    "triple-dot-above":   "\uE040",
+    "double-dot-above":   "\uE042",
+    "double-dot-inside":  "\uE043",
+    "dot-above":          "\uE044",
+    "dot-below":          "\uE045",
+    "dot-below-after":    "\uE045",
+    "acute":              "\uE046",
+    "right-curl":         "\uE04A",
+    "left-curl":          "\uE04C",
+    "bar-above":          "\uE050",  # NASALIZER
+    "bar-below":          "\uE051",  # DOUBLER
+    "bar-inside":         "\uE051",  # same codepoint; font handles positioning
+    "tilde-above":        "\uE050",
+    "tilde-below":        "\uE051",
+    "tilde-high":         "\uE050",
+    "over-twist":         "\uE052",  # TILDE; used for labialization
+    "breve":              "\uE053",
+    "grave":              "\uE054",
+    "thinnas":            "\uE057",
+    "hook":               "\uE058",
+    "dot-inside":         "\uE05A",
+
+    # Punctuation at U+E060-U+E068
+    "pusta":              "\uE060",
+    "full-stop":          "\uE060",
+    "dash":               "",        # empirically swallowed by Tecendil
+
+    # Digits at U+E070-U+E07B
+    "zero":               "\uE070",
+    "one":                "\uE071",
+    "two":                "\uE072",
+    "three":              "\uE073",
+    "four":               "\uE074",
+    "five":               "\uE075",
+    "six":                "\uE076",
+    "seven":              "\uE077",
+    "eight":              "\uE078",
+    "nine":               "\uE079",
+    "ten":                "\uE07A",
+    "eleven":             "\uE07B",
+}
+
+# Default short-vowel-to-tehta mapping, used when the mode's `map`
+# doesn't override a vowel. Discovered empirically in Tecendil's
+# engine: short vowels with no explicit rule fall through to this.
+DEFAULT_VOWEL_TEHTAR = {
+    "a": "[triple-dot-above]",
+    "e": "[acute]",
+    "i": "[dot-above]",
+    "o": "[right-curl]",
+    "u": "[left-curl]",
+    "y": "[double-dot-below]",  # Sindarin overrides to double-dot-above
+}
+
+# Tehta position classes (for the compatibility check that decides
+# whether a second tehta needs a separate carrier). Two tehtar in
+# the same position class conflict; tehtar in different classes can
+# stack on the same tengwa.
+TEHTA_POSITION = {
+    "triple-dot-above":     "above",
+    "double-dot-above":     "above",
+    "dot-above":            "above",
+    "acute":                "above",
+    "right-curl":           "above",
+    "left-curl":            "above",
+    "triple-dot-below":     "below",
+    "double-dot-below":     "below",
+    "dot-below":            "below",
+    "acute-below":          "below",
+    "right-curl-below":     "below",
+    "left-curl-below":      "below",
+    "bar-above":            "modifier-above",
+    "tilde-above":          "modifier-above",
+    "bar-below":            "modifier-below",
+    "tilde-below":          "modifier-below",
+    "bar-inside":           "other",
+    "dot-inside":           "other",
+    "double-dot-inside":    "other",
+    "over-twist":           "modifier-above",
+}
+
+
+def is_word_char(c):
+    return c.isalpha() or c in "âêîôûŷœæ"
+
+
+def strip_jsonc_comments(text):
+    """Strip // line comments. Doesn't handle /* block */ but mode files don't use those."""
+    # Don't strip // inside strings. Quick state-machine.
+    out = []
+    i = 0
+    in_str = False
+    while i < len(text):
+        c = text[i]
+        if in_str:
+            if c == "\\" and i + 1 < len(text):
+                out.append(c)
+                out.append(text[i+1])
+                i += 2
+                continue
+            if c == '"':
+                in_str = False
+            out.append(c)
+            i += 1
+        else:
+            if c == '"':
+                in_str = True
+                out.append(c)
+                i += 1
+            elif c == "/" and i + 1 < len(text) and text[i+1] == "/":
+                # Skip to end of line
+                while i < len(text) and text[i] != "\n":
+                    i += 1
+            else:
+                out.append(c)
+                i += 1
+    return "".join(out)
+
+
+def load_mode(mode_name):
+    """Load a JSONC mode file."""
+    basename = MODE_ALIASES.get(mode_name, mode_name)
+    path = os.path.join(MODES_DIR, f"{basename}.jsonc")
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    return json.loads(strip_jsonc_comments(text))
+
+
+def compile_rule_key(key):
+    """Parse a rule key into (kind, payload).
+
+    Kinds:
+      ("regex", compiled_pattern)
+      ("literal", text, anchor_start_bool, anchor_end_bool)
+    """
+    if key.startswith("/"):
+        last = key.rindex("/")
+        pattern = key[1:last]
+        return ("regex", re.compile(pattern))
+    anchor_start = key.startswith("^")
+    anchor_end = key.endswith("$")
+    literal = key
+    if anchor_start:
+        literal = literal[1:]
+    if anchor_end:
+        literal = literal[:-1]
+    return ("literal", literal, anchor_start, anchor_end)
+
+
+def compile_rules(rules_dict):
+    """Compile all rules into a list preserving file order."""
+    out = []
+    for key, value in rules_dict.items():
+        out.append((compile_rule_key(key), value))
+    return out
+
+
+def apply_preprocess(text, preprocess):
+    """Run all preprocess rules over the input text.
+
+    We skip the literal `"-": " "` rule because empirically Tecendil
+    preserves trailing dashes for the `ia-$` rule. The other preprocess
+    rules (ligature expansion, qu->q, etc.) are still applied.
+    """
+    for key, value in preprocess.items():
+        if key == "-":
+            continue  # see docstring
+        if key.startswith("/"):
+            last = key.rindex("/")
+            pat = re.compile(key[1:last])
+            text = pat.sub(value, text)
+        else:
+            text = text.replace(key, value)
+    return text
+
+
+def apply_word_overrides(text, words):
+    """Whole-word substitutions from the mode's `words` dict."""
+    for word, replacement in words.items():
+        text = re.sub(r"\b" + re.escape(word) + r"\b", replacement, text)
+    return text
+
+
+def apply_rules(text, compiled_rules):
+    """Walk text left to right. At each position pick the best matching rule.
+
+    Selection order (higher beats lower):
+      1. anchored rules (^/$) beat unanchored
+      2. longer match beats shorter
+      3. earlier-in-file beats later (tiebreaker)
+
+    This matches Tecendil's behavior: '^ang' (anchored) wins over the
+    later, unanchored 'angw' rule even though it's shorter; but 'gw'
+    (unanchored, length 2) beats 'g' (unanchored, length 1).
+    """
+    output = []
+    i = 0
+    n = len(text)
+    while i < n:
+        # Find best matching rule at position i.
+        best = None  # (score, length, replacement)
+        for idx, (key, value) in enumerate(compiled_rules):
+            if key[0] == "regex":
+                _, pat = key
+                m = pat.match(text, i)
+                if not m:
+                    continue
+                length = m.end() - i
+                replacement = pat.sub(value, m.group(0))
+                anchored = 0
+            else:
+                _, lit, anchor_start, anchor_end = key
+                if anchor_start and i > 0 and is_word_char(text[i-1]):
+                    continue
+                end = i + len(lit)
+                if end > n or text[i:end] != lit:
+                    continue
+                if anchor_end and end < n and is_word_char(text[end]):
+                    continue
+                length = len(lit)
+                replacement = value
+                anchored = 1 if (anchor_start or anchor_end) else 0
+            score = (anchored, length, -idx)
+            if best is None or score > best[0]:
+                best = (score, length, replacement)
+        if best is not None:
+            _, length, replacement = best
+            output.append(replacement)
+            i += length
+        else:
+            c = text[i]
+            lc = c.lower()
+            if lc in DEFAULT_VOWEL_TEHTAR:
+                output.append(DEFAULT_VOWEL_TEHTAR[lc])
+            else:
+                output.append(c)
+            i += 1
+    return "".join(output)
+
+
+def tokenize_symbolic(s):
+    """Yield (kind, value) tokens from a symbolic stream."""
+    i = 0
+    n = len(s)
+    while i < n:
+        c = s[i]
+        if c == "{":
+            end = s.index("}", i)
+            yield ("tengwa", s[i+1:end])
+            i = end + 1
+        elif c == "[":
+            end = s.index("]", i)
+            name = s[i+1:end]
+            if name:
+                yield ("tehta", name)
+            i = end + 1
+        else:
+            yield ("text", c)
+            i += 1
+
+
+def tehtar_conflict(a, b):
+    return TEHTA_POSITION.get(a, "above") == TEHTA_POSITION.get(b, "above")
+
+
+def context_substitute(tengwa_name, tehta_name):
+    """Tecendil's context substitutions: certain tehtar change name when applied to lambe."""
+    if tengwa_name == "lambe":
+        if tehta_name == "bar-below":
+            return "bar-inside"
+        if tehta_name == "dot-below":
+            return "dot-inside"
+    return tehta_name
+
+
+def position_tehtar(symbolic, tehtar_follow):
+    """Apply tehtarFollow placement, producing a refined symbolic stream
+    where each tehta is bound to its host tengwa (with a telco as fallback)."""
+    tokens = list(tokenize_symbolic(symbolic))
+    out = []
+    acc = []  # pending tehtar
+
+    def emit_carrier():
+        if acc:
+            out.append("{telco}" + "".join(f"[{t}]" for t in acc))
+            acc.clear()
+
+    def emit_tengwa(name):
+        # Apply context substitutions to each accumulated tehta
+        substituted = [context_substitute(name, t) for t in acc]
+        out.append("{" + name + "}" + "".join(f"[{t}]" for t in substituted))
+        acc.clear()
+
+    if tehtar_follow:
+        for kind, value in tokens:
+            if kind == "tehta":
+                if any(tehtar_conflict(t, value) for t in acc):
+                    emit_carrier()
+                acc.append(value)
+            elif kind == "tengwa":
+                emit_tengwa(value)
+            else:  # text
+                emit_carrier()
+                out.append(value)
+        emit_carrier()
+    else:
+        # tehtarFollow:false (Quenya): tehta attaches to previous tengwa.
+        prev = None
+        def emit_prev():
+            nonlocal prev
+            if prev is not None:
+                substituted = [context_substitute(prev, t) for t in acc]
+                out.append("{" + prev + "}" + "".join(f"[{t}]" for t in substituted))
+                prev = None
+                acc.clear()
+            elif acc:
+                out.append("{telco}" + "".join(f"[{t}]" for t in acc))
+                acc.clear()
+        for kind, value in tokens:
+            if kind == "tehta":
+                if any(tehtar_conflict(t, value) for t in acc):
+                    emit_prev()
+                acc.append(value)
+            elif kind == "tengwa":
+                emit_prev()
+                prev = value
+            else:
+                emit_prev()
+                out.append(value)
+        emit_prev()
+
+    return "".join(out)
+
+
+def to_csur(symbolic):
+    """Convert symbolic stream to CSUR codepoints."""
+    parts = []
+    for kind, value in tokenize_symbolic(symbolic):
+        if kind == "tengwa":
+            if value == "dash":
+                continue
+            cp = NAME_TO_CSUR.get(value)
+            if cp is None:
+                raise ValueError(f"Unknown tengwa name: {value!r}")
+            parts.append(cp)
+        elif kind == "tehta":
+            cp = NAME_TO_CSUR.get(value)
+            if cp is None:
+                raise ValueError(f"Unknown tehta name: {value!r}")
+            parts.append(cp)
+        else:
+            parts.append(value)
+    return "".join(parts).rstrip()
+
+
+def transliterate(text, mode):
+    text = apply_preprocess(text, mode.get("preprocess", {}))
+    text = apply_word_overrides(text, mode.get("words", {}))
+    rules = compile_rules(mode.get("map", {}))
+    symbolic = apply_rules(text, rules)
+    positioned = position_tehtar(symbolic, mode.get("tehtarFollow", False))
+    return to_csur(positioned)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "mode",
+        help="Mode name (sjn, qya, sindarin, quenya, beleriand)",
+    )
+    parser.add_argument(
+        "text",
+        nargs="+",
+        help="Romanized text to transliterate",
+    )
+    parser.add_argument(
+        "--show-codepoints",
+        action="store_true",
+        help="Print U+xxxx codepoint sequence instead of raw characters",
+    )
+    args = parser.parse_args()
+
+    try:
+        mode = load_mode(args.mode)
+    except FileNotFoundError:
+        print(f"Unknown mode: {args.mode}", file=sys.stderr)
+        sys.exit(2)
+
+    text = " ".join(args.text)
+    out = transliterate(text, mode)
+    if args.show_codepoints:
+        cps = []
+        for c in out:
+            o = ord(c)
+            if o == 0x20:
+                cps.append("SPACE")
+            elif 0xE000 <= o <= 0xE07F:
+                cps.append(f"U+{o:04X}")
+            else:
+                cps.append(f"U+{o:04X}")
+        print(" ".join(cps))
+    else:
+        print(out)
+
+
+if __name__ == "__main__":
+    main()
