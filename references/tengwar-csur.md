@@ -198,17 +198,32 @@ These behaviors aren't fully described by the jsonc rules but appear
 empirically in Tecendil's runtime output. Any engine targeting
 Tecendil-compatible output should reproduce them.
 
-**Word separator**: between words Tecendil emits U+2009 (THIN SPACE)
-followed by U+0020 (SPACE). Not a single space.
+**Word separator in Tecendil's display**: Tecendil emits U+2009 (THIN
+SPACE) followed by U+0020 (SPACE) between words in its displayed
+output. This insertion happens at the presentation layer, not in the
+transliteration engine: grepping Tecendil's bundled JS for any
+reference to U+2009 (literal or escaped) finds nothing. **Our engine
+emits plain U+0020 only.** Anyone needing Tecendil's exact display
+behavior can add CSS letter-spacing, not engine output changes.
 
-**`angw` differs from the literal jsonc rule**: the `sindarin.jsonc`
-rule for `angw` is
-`"[bar-above][over-twist][triple-dot-above]{ungwe}"` (UNGWE with
-nasal-bar, labial-tilde, and a-tehta). The actual Tecendil output
-for `angwedh` uses NWALME (U+E013) + a-tehta + VALA (U+E015)
-instead. Implication: some jsonc rules are aspirational or get
-overridden at runtime. When porting, prefer Tecendil's empirical
-output over the literal jsonc rule when they disagree.
+**Rule application is file-order, first-match-at-position** — not
+longest-match-wins. Verified against Tecendil's deployed
+`sindarin.jsonc` (which is byte-identical to the GitHub master). The
+file contains both `"^ang": "[triple-dot-above]{nwalme}"` (word-start
+anchored) and `"angw": "[bar-above][over-twist][triple-dot-above]{ungwe}"`
+(unanchored, defined later). For `angwedh`, the empirical output is
+NWALME + a-tehta + VALA + ANTO + acute (matching the `^ang` rule
+followed by separate `w`/`e`/`dh` rules), not the literal `angw`
+rule's UNGWE-with-modifiers. The `angw` rule is **dead code**: it
+appears later in the file than `^ang`, and the engine never reaches
+it. Implication for engine authors: apply rules in source order;
+don't pre-sort by length.
+
+**Context-sensitive tehta substitution**: when about to emit
+`[bar-below]` after `{lambe}`, Tecendil's engine substitutes
+`[bar-inside]` (same codepoint U+E051, but the name change matters
+for downstream rules). Same with `[dot-below]` -> `[dot-inside]`
+(U+E045 -> U+E05A — different codepoint!) after lambe.
 
 **`{dash}` emits nothing**: in `"ia-$": "...{dash}"`, the `{dash}`
 token doesn't produce a codepoint. It seems to be an engine-internal
