@@ -13,6 +13,9 @@ languages. Used as the substrate for any specific translation effort.
 - `translation-schema.md` -- v1 schema for translation source files
   (YAML), with per-element provenance. The recommended structure for
   any project consuming this framework.
+- `tengwar-csur.md` -- the CSUR Tengwar codepoint table (U+E000-U+E07F)
+  digested from Michael Everson's draft Unicode proposal. The
+  authoritative codepoint reference for any Tengwar work here.
 
 ## Upstream lexicon (not in repo)
 
