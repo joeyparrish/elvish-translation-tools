@@ -60,7 +60,7 @@ codepoint is assigned.
 | U+E02A | YANTA | (vowel carrier, glide) |
 | U+E02B | UURE | (vowel carrier) |
 | U+E02C | LONG CARRIER | bears long-vowel tehtar |
-| U+E02D | (alternate position; see notes) | |
+| U+E02D | HALLA | Quenya unvoiced-prefix letter |
 | U+E02E | SHORT CARRIER | bears short-vowel tehtar when no host |
 | U+E031 | STEMLESS VALA | English [w] in some modes |
 | U+E032 | STEMLESS ANNA | vowel in Beleriand mode |
@@ -72,10 +72,12 @@ codepoint is assigned.
 | U+E039 | TALL STEMLESS VALA | |
 | U+E03A | MH | nasalized m |
 
-**Note on carrier positions:** the PDF lists LONG CARRIER at xx2C and
-SHORT CARRIER at xx2E. python-tengwar's `unicode_mappings` table
-places LongCarrier at U+E02D and ShortCarrier at U+E02E. Test against
-the actual font before committing to one or the other for the engine.
+**Note on carrier positions:** the PDF lists LONG CARRIER at U+E02C
+and SHORT CARRIER at U+E02E. **python-tengwar's `unicode_mappings`
+table is wrong**: it places LongCarrier at U+E02D, but U+E02D is
+HALLA. Empirically verified against Tecendil output for `dîn` (long
+i): the long carrier is U+E02C. Do not trust python-tengwar's
+codepoint for the long carrier.
 
 ### Tehtar (vowel and modifier signs) — U+E040 to U+E057
 
@@ -175,18 +177,43 @@ divergences:
 
 | Tecendil name | CSUR codepoint | Everson name |
 |---|---|---|
-| `aara` | U+E02C or U+E02D | LONG CARRIER (used as long-vowel host) |
+| `aara` | U+E02C | LONG CARRIER (verified empirically; see below) |
 | `telco` | U+E02E | SHORT CARRIER |
 | `esse-nuquerna` | U+E027 | AARE NUQUERNA |
 | `malta-with-curl` | U+E03A | MH |
 | `bar-above` | U+E050 | NASALIZER |
 | `bar-below` | U+E051 | DOUBLER |
-| `over-twist` | U+E052 (likely) | TILDE — needs verification |
-| `bar-inside` | U+E051 + lambe (likely, OpenType variant) | DOUBLER applied to LAMBE — needs verification |
-| `dash` | (likely literal `-`, U+002D) | needs verification |
+| `over-twist` | U+E052 | TILDE (verified) |
+| `bar-inside` | U+E051 | DOUBLER (same codepoint as bar-below; font handles positioning contextually) |
+| `dash` | emits nothing | swallowed by the engine (verified) |
 
-The three "needs verification" entries are open questions to resolve
-by running known input through Tecendil and inspecting the output.
+All entries verified against Tecendil output for the test strings
+`gwain dwedh angwedh`, `mellon tollui`, `miria-`, `daro dîn`. Raw
+codepoint sequences from those runs are captured in
+[`../tests.md`](../tests.md) for regression purposes.
+
+## Quirks observed in Tecendil output
+
+These behaviors aren't fully described by the jsonc rules but appear
+empirically in Tecendil's runtime output. Any engine targeting
+Tecendil-compatible output should reproduce them.
+
+**Word separator**: between words Tecendil emits U+2009 (THIN SPACE)
+followed by U+0020 (SPACE). Not a single space.
+
+**`angw` differs from the literal jsonc rule**: the `sindarin.jsonc`
+rule for `angw` is
+`"[bar-above][over-twist][triple-dot-above]{ungwe}"` (UNGWE with
+nasal-bar, labial-tilde, and a-tehta). The actual Tecendil output
+for `angwedh` uses NWALME (U+E013) + a-tehta + VALA (U+E015)
+instead. Implication: some jsonc rules are aspirational or get
+overridden at runtime. When porting, prefer Tecendil's empirical
+output over the literal jsonc rule when they disagree.
+
+**`{dash}` emits nothing**: in `"ia-$": "...{dash}"`, the `{dash}`
+token doesn't produce a codepoint. It seems to be an engine-internal
+marker (perhaps for syllable boundaries or for preventing rule
+re-application) rather than a character.
 
 ## What this reference is for
 
