@@ -1,7 +1,7 @@
 ---
 name: elvish-translation-tools
 description: Use when translating, reviewing, or maintaining UI / document translations into Sindarin or Quenya (Tolkien's Elvish languages). Triggers include: working with a Sindarin / sjn / Quenya / qya locale file; asked to translate an English string into Elvish; reviewing existing Elvish translations for correctness; adding new strings to an existing Elvish translation. Uses the bundled Eldamo lexicon and grammar references to ground every choice in attested or documented forms.
-allowed-tools: Bash(python3 */elvish-translation-tools/scripts/lookup.py *)
+allowed-tools: Bash(python3 */elvish-translation-tools/scripts/lookup.py *), Bash(python3 */elvish-translation-tools/scripts/transliterate.py *)
 ---
 
 # Elvish Translation Tools
@@ -164,7 +164,24 @@ When filling out `elements[]`, the source citation should be whatever `lookup.py
 
 ## Script encoding (Tengwar)
 
-The `sjn.tengwar` field uses CSUR (ConScript Unicode Registry) Tengwar at U+E000–U+E07F, the encoding supported by the Tengwar Telcontar font and the Tecendil transliterator. Do not hand-edit these characters; they render as boxes without a CSUR-aware font. Defer Tengwar production to a transliterator (Tecendil) or to the human editor working with the font installed. See `${CLAUDE_SKILL_DIR}/references/translation-schema.md` for alternative encodings.
+The `sjn.tengwar` field uses CSUR (ConScript Unicode Registry) Tengwar at U+E000–U+E07F, the encoding supported by the Tengwar Telcontar font and the Tecendil transliterator. Do not hand-edit these characters; they render as boxes without a CSUR-aware font. See `${CLAUDE_SKILL_DIR}/references/tengwar-csur.md` for the codepoint table and `${CLAUDE_SKILL_DIR}/references/translation-schema.md` for alternative encodings.
+
+## Producing Tengwar from romanized Sindarin / Quenya
+
+Use the bundled transliteration engine instead of hand-typing Tengwar:
+
+    python3 ${CLAUDE_SKILL_DIR}/scripts/transliterate.py sjn "<romanized>"
+    python3 ${CLAUDE_SKILL_DIR}/scripts/transliterate.py qya "<romanized>"
+    python3 ${CLAUDE_SKILL_DIR}/scripts/transliterate.py sjn "<romanized>" --show-codepoints
+
+The engine implements Tecendil's Sindarin / Quenya / Beleriand modes (mode files vendored under `${CLAUDE_SKILL_DIR}/data/modes/`). Its output is CSUR Tengwar that can be pasted directly into a `sjn.tengwar` field.
+
+When to use:
+
+- **Filling in `sjn.tengwar` for a new entry**: produce the romanized form first (so it's reviewable), then transliterate. Never invent the Tengwar field; always derive it.
+- **Verifying an existing `sjn.tengwar`**: transliterate the entry's `sjn.roman` and compare. A mismatch flags either an old hand-typed entry to update or a roman/Tengwar disagreement worth investigating.
+
+Output is byte-identical to Tecendil for the 24 regression cases in `${CLAUDE_SKILL_DIR}/data/modes/sindarin-tests.yaml` and `quenya-tests.yaml`. Known divergence: the engine does not emit Tecendil's display-only thin-space (U+2009) between words; it uses plain U+0020.
 
 ## Review checklist
 
