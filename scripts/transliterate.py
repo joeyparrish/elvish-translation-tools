@@ -100,6 +100,7 @@ NAME_TO_CSUR = {
     # Tehtar (vowel and modifier signs) at U+E040-U+E057
     "triple-dot-above":   "\uE040",
     "double-dot-above":   "\uE042",
+    "double-dot-below":   "\uE043",  # also rendered as "double-dot-inside" in Sindarin context
     "double-dot-inside":  "\uE043",
     "dot-above":          "\uE044",
     "dot-below":          "\uE045",
@@ -152,10 +153,14 @@ DEFAULT_VOWEL_TEHTAR = {
     "y": "[double-dot-below]",  # Sindarin overrides to double-dot-above
 }
 
-# Tehta position classes (for the compatibility check that decides
-# whether a second tehta needs a separate carrier). Two tehtar in
-# the same position class conflict; tehtar in different classes can
-# stack on the same tengwa.
+# Tehta position classes. Two tehtar in the same class conflict (the
+# accumulator must be flushed via telco before adding the second);
+# tehtar in different classes coexist on the same tengwa.
+#
+# Nasal marker (bar-above) and labial marker (over-twist) are
+# independent of each other and of vowel tehtar -- they can all stack
+# on a single tengwa (e.g. UNGWE for 'angw' carries nasal + labial +
+# vowel marks).
 TEHTA_POSITION = {
     "triple-dot-above":     "above",
     "double-dot-above":     "above",
@@ -169,14 +174,14 @@ TEHTA_POSITION = {
     "acute-below":          "below",
     "right-curl-below":     "below",
     "left-curl-below":      "below",
-    "bar-above":            "modifier-above",
-    "tilde-above":          "modifier-above",
-    "bar-below":            "modifier-below",
-    "tilde-below":          "modifier-below",
-    "bar-inside":           "other",
+    "bar-above":            "nasal",
+    "tilde-above":          "nasal",
+    "over-twist":           "labial",
+    "bar-below":            "doubler",
+    "tilde-below":          "doubler",
+    "bar-inside":           "doubler",
     "dot-inside":           "other",
     "double-dot-inside":    "other",
-    "over-twist":           "modifier-above",
 }
 
 
@@ -185,13 +190,23 @@ def is_word_char(c):
 
 
 def strip_jsonc_comments(text):
-    """Strip // line comments. Doesn't handle /* block */ but mode files don't use those."""
-    # Don't strip // inside strings. Quick state-machine.
+    """Strip // line comments and /* block */ comments, respecting strings."""
     out = []
     i = 0
     in_str = False
+    in_block = False
     while i < len(text):
         c = text[i]
+        if in_block:
+            if c == "*" and i + 1 < len(text) and text[i+1] == "/":
+                in_block = False
+                i += 2
+                continue
+            # Preserve newlines so error messages keep line numbers
+            if c == "\n":
+                out.append(c)
+            i += 1
+            continue
         if in_str:
             if c == "\\" and i + 1 < len(text):
                 out.append(c)
@@ -207,9 +222,15 @@ def strip_jsonc_comments(text):
                 in_str = True
                 out.append(c)
                 i += 1
-            elif c == "/" and i + 1 < len(text) and text[i+1] == "/":
-                # Skip to end of line
-                while i < len(text) and text[i] != "\n":
+            elif c == "/" and i + 1 < len(text):
+                if text[i+1] == "/":
+                    while i < len(text) and text[i] != "\n":
+                        i += 1
+                elif text[i+1] == "*":
+                    in_block = True
+                    i += 2
+                else:
+                    out.append(c)
                     i += 1
             else:
                 out.append(c)
@@ -274,11 +295,121 @@ def apply_preprocess(text, preprocess):
     return text
 
 
-def apply_word_overrides(text, words):
-    """Whole-word substitutions from the mode's `words` dict."""
-    for word, replacement in words.items():
-        text = re.sub(r"\b" + re.escape(word) + r"\b", replacement, text)
+# Default vowel normalization. Per the Tecendil bundle, when a mode
+# has normalizeVowels:true the engine collapses long-vowel notations
+# into the circumflex forms, plus strips the diaeresis from short
+# vowels (which Quenya uses to mark word-final pronunciation).
+NORMALIZE_VOWELS = [
+    (re.compile(r"ā|á|aa"), "â"),
+    (re.compile(r"ē|é|ee"), "ê"),
+    (re.compile(r"ī|í|ii"), "î"),
+    (re.compile(r"ō|ó|oo"), "ô"),
+    (re.compile(r"ū|ú|uu"), "û"),
+    (re.compile(r"ȳ|ý|yy"), "ŷ"),
+    # Strip diaeresis (Quenya pronunciation marker; not phonetic)
+    (re.compile(r"ë"), "e"),
+    (re.compile(r"ï"), "i"),
+    (re.compile(r"ä"), "a"),
+    (re.compile(r"ö"), "o"),
+    (re.compile(r"ü"), "u"),
+]
+
+
+def normalize_vowels(text):
+    for pat, rep in NORMALIZE_VOWELS:
+        text = pat.sub(rep, text)
     return text
+
+
+# Sentinel that marks "the next tengwa emitted should use the uppercase
+# (capital) CSUR variant at +0x80 from its lowercase codepoint".
+# Used by handle_capitals.
+UPPER_MARK = "\x01"
+
+
+def handle_capitals(text):
+    """Lowercase all letters; insert UPPER_MARK before word-initial capitals.
+
+    Tecendil renders a word with an uppercase first letter using its
+    extended CSUR range (U+E080-U+E0AE): each uppercase tengwa lives at
+    its lowercase codepoint + 0x80. So `Rohan` -> uppercase ROOMEN
+    (U+E0A0) + lowercase rest; `Eldamar` -> uppercase TELCO carrier
+    (U+E0AE) + lowercase rest.
+
+    We implement this by lowercasing the input (so all the regular
+    rules fire normally) and inserting an UPPER_MARK sentinel
+    immediately before each word-initial uppercase letter. The
+    sentinel passes through the rule application and tehta positioning
+    unchanged; to_csur converts the next tengwa to its uppercase
+    variant when it sees the mark.
+
+    Mid-word uppercase letters are lowercased silently with no mark
+    (rare in Elvish romanization, mostly an input quirk).
+    """
+    out = []
+    at_word_start = True
+    for c in text:
+        is_letter = c.isalpha() or c in WORD_CHARS_NON_ASCII
+        if c.isupper() and at_word_start:
+            out.append(UPPER_MARK)
+        out.append(c.lower() if c.isupper() else c)
+        at_word_start = not is_letter
+    return "".join(out)
+
+
+def uppercase_tengwa(cp):
+    """Return the uppercase-variant codepoint for a lowercase tengwa.
+
+    Tengwar at U+E000-U+E03F have uppercase variants at +0x80
+    (Tecendil's extension to CSUR). Tehtar and other codepoints have
+    no uppercase variant; they are returned unchanged.
+    """
+    o = ord(cp)
+    if 0xE000 <= o <= 0xE03F:
+        return chr(o + 0x80)
+    return cp
+
+
+def apply_word_overrides(text, words):
+    """Whole-word substitutions from the mode's `words` dict.
+
+    Matches Tecendil's behavior: the lookup is case-insensitive against
+    the LOWERCASED key. Override keys that contain uppercase letters
+    are effectively dead in Tecendil (it does
+    `words[input.toLowerCase()]`, which never matches a capitalized
+    key); we honor that behavior.
+
+    If a replacement value contains symbolic-stream markers ({...} or
+    [...]), it is treated as a literal symbolic stream and protected
+    from further rule application by wrapping in a sentinel.
+    """
+    for word, replacement in words.items():
+        if word != word.lower():
+            continue  # dead override per Tecendil's case-sensitive lookup miss
+        # Case-insensitive whole-word match. \b doesn't handle non-ASCII
+        # word chars (â, î, ŷ...) well, so use lookarounds.
+        pattern = r"(?<![\w" + WORD_CHARS_NON_ASCII + r"])" + \
+                  re.escape(word) + \
+                  r"(?![\w" + WORD_CHARS_NON_ASCII + r"])"
+        if any(c in "{[" for c in replacement):
+            # Symbolic stream: protect from rule application with a
+            # sentinel that apply_rules passes through unchanged.
+            text = re.sub(pattern, SENTINEL_OPEN + replacement + SENTINEL_CLOSE,
+                          text, flags=re.IGNORECASE)
+        else:
+            text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+    return text
+
+
+# Non-ASCII word characters used in Elvish romanization (long vowels,
+# y-with-macron, ligatures).
+WORD_CHARS_NON_ASCII = "âêîôûŷœæáéíóúýÁÉÍÓÚÝÂÊÎÔÛŸ"
+
+# Sentinels for protecting symbolic-stream word overrides from the rule
+# applier. apply_rules emits these spans verbatim; the final tokenizer
+# unwraps them and the contents are read as symbolic tokens.
+SENTINEL_OPEN = "\x00<"
+SENTINEL_CLOSE = ">\x00"
 
 
 def apply_rules(text, compiled_rules):
@@ -292,11 +423,22 @@ def apply_rules(text, compiled_rules):
     This matches Tecendil's behavior: '^ang' (anchored) wins over the
     later, unanchored 'angw' rule even though it's shorter; but 'gw'
     (unanchored, length 2) beats 'g' (unanchored, length 1).
+
+    Symbolic-stream sentinels (from word overrides whose value is a
+    symbolic stream) are passed through verbatim.
     """
     output = []
     i = 0
     n = len(text)
     while i < n:
+        # Pass-through for symbolic-stream sentinels. Preserve the
+        # sentinel markers so downstream passes (position_tehtar) know
+        # not to process the contents.
+        if text.startswith(SENTINEL_OPEN, i):
+            end = text.index(SENTINEL_CLOSE, i)
+            output.append(text[i:end + len(SENTINEL_CLOSE)])
+            i = end + len(SENTINEL_CLOSE)
+            continue
         # Find best matching rule at position i.
         best = None  # (score, length, replacement)
         for idx, (key, value) in enumerate(compiled_rules):
@@ -339,7 +481,13 @@ def apply_rules(text, compiled_rules):
 
 
 def tokenize_symbolic(s):
-    """Yield (kind, value) tokens from a symbolic stream."""
+    """Yield (kind, value) tokens from a symbolic stream.
+
+    Empty tengwa `{}` is yielded with an empty value so callers can
+    decide what to do (to_csur treats it as a no-op placeholder).
+    Empty tehta `[]` is silently dropped (it's how Tecendil represents
+    'no tehta here').
+    """
     i = 0
     n = len(s)
     while i < n:
@@ -373,22 +521,90 @@ def context_substitute(tengwa_name, tehta_name):
     return tehta_name
 
 
+# Order of tehtar within one tengwa's output. Tecendil emits in this
+# order: nasal marker, labial marker, below tehtar, above tehtar,
+# doubler/other. The visual stacking is handled by the font.
+TEHTA_EMIT_ORDER = {
+    "nasal":   0,  # bar-above
+    "labial":  1,  # over-twist
+    "below":   2,
+    "above":   3,  # vowel tehtar
+    "doubler": 4,  # bar-below, bar-inside
+    "other":   5,
+}
+
+
+def sort_tehtar(tehtar):
+    """Sort tehtar by Tecendil's canonical emission order; stable on ties."""
+    return sorted(
+        enumerate(tehtar),
+        key=lambda x: (TEHTA_EMIT_ORDER.get(
+            TEHTA_POSITION.get(x[1], "above"), 99), x[0]),
+    )
+
+
+def maybe_promote_silme_nuquerna(tengwa_name, tehtar):
+    """If silme would carry an 'above'-class tehta, switch to silme-nuquerna.
+
+    The inverted form leaves clean space below for the tehta. This is a
+    Tecendil convention also seen in mode rules like 'ans' -> ...
+    {silme-nuquerna}.
+    """
+    if tengwa_name != "silme":
+        return tengwa_name
+    has_above_tehta = any(
+        TEHTA_POSITION.get(t, "above") == "above" for t in tehtar)
+    return "silme-nuquerna" if has_above_tehta else tengwa_name
+
+
 def position_tehtar(symbolic, tehtar_follow):
     """Apply tehtarFollow placement, producing a refined symbolic stream
-    where each tehta is bound to its host tengwa (with a telco as fallback)."""
+    where each tehta is bound to its host tengwa (with a telco as fallback).
+
+    Sentinel-wrapped regions (from symbolic-stream word overrides) are
+    passed through verbatim -- the override author is trusted to have
+    placed the tehtar correctly; reapplying tehtarFollow would shift
+    them incorrectly.
+    """
+    # Split on sentinels so we can pass-through override regions.
+    # Each segment is either a sentinel block (str starting with SENTINEL_OPEN)
+    # or a normal symbolic substring to process.
+    out_parts = []
+    i = 0
+    while i < len(symbolic):
+        si = symbolic.find(SENTINEL_OPEN, i)
+        if si < 0:
+            out_parts.append(_position_segment(symbolic[i:], tehtar_follow))
+            break
+        # Process the leading normal segment
+        if si > i:
+            out_parts.append(_position_segment(symbolic[i:si], tehtar_follow))
+        # Then pass through the override region verbatim (sans markers).
+        sj = symbolic.index(SENTINEL_CLOSE, si)
+        out_parts.append(symbolic[si + len(SENTINEL_OPEN):sj])
+        i = sj + len(SENTINEL_CLOSE)
+    return "".join(out_parts)
+
+
+def _position_segment(symbolic, tehtar_follow):
+    """Position-tehtar for a single segment (no embedded sentinels)."""
     tokens = list(tokenize_symbolic(symbolic))
     out = []
     acc = []  # pending tehtar
 
     def emit_carrier():
         if acc:
-            out.append("{telco}" + "".join(f"[{t}]" for t in acc))
+            ordered = [acc[i] for i, _ in sort_tehtar(acc)]
+            out.append("{telco}" + "".join(f"[{t}]" for t in ordered))
             acc.clear()
 
     def emit_tengwa(name):
-        # Apply context substitutions to each accumulated tehta
+        # Tecendil promotes silme -> silme-nuquerna when it carries an
+        # above-class tehta.
+        name = maybe_promote_silme_nuquerna(name, acc)
         substituted = [context_substitute(name, t) for t in acc]
-        out.append("{" + name + "}" + "".join(f"[{t}]" for t in substituted))
+        ordered = [substituted[i] for i, _ in sort_tehtar(substituted)]
+        out.append("{" + name + "}" + "".join(f"[{t}]" for t in ordered))
         acc.clear()
 
     if tehtar_follow:
@@ -408,14 +624,23 @@ def position_tehtar(symbolic, tehtar_follow):
         prev = None
         def emit_prev():
             nonlocal prev
-            if prev is not None:
-                substituted = [context_substitute(prev, t) for t in acc]
-                out.append("{" + prev + "}" + "".join(f"[{t}]" for t in substituted))
+            # Treat empty-string prev (from `{}` placeholder) as no prev:
+            # the trailing tehtar fall back to a telco carrier rather
+            # than attaching to an invisible "no tengwa".
+            if prev:
+                p = maybe_promote_silme_nuquerna(prev, acc)
+                substituted = [context_substitute(p, t) for t in acc]
+                ordered = [substituted[i] for i, _ in sort_tehtar(substituted)]
+                out.append("{" + p + "}" + "".join(f"[{t}]" for t in ordered))
                 prev = None
                 acc.clear()
             elif acc:
-                out.append("{telco}" + "".join(f"[{t}]" for t in acc))
+                ordered = [acc[i] for i, _ in sort_tehtar(acc)]
+                out.append("{telco}" + "".join(f"[{t}]" for t in ordered))
                 acc.clear()
+            elif prev == "":
+                # Empty placeholder with no pending tehtar: just clear.
+                prev = None
         for kind, value in tokens:
             if kind == "tehta":
                 if any(tehtar_conflict(t, value) for t in acc):
@@ -433,15 +658,34 @@ def position_tehtar(symbolic, tehtar_follow):
 
 
 def to_csur(symbolic):
-    """Convert symbolic stream to CSUR codepoints."""
+    """Convert symbolic stream to CSUR codepoints.
+
+    Sentinel-wrapped regions (from symbolic-stream word overrides) are
+    unwrapped here -- the markers themselves are skipped, and the
+    contents (already symbolic tokens) flow through normally.
+
+    Empty tengwa `{}` and the `dash` token both emit nothing -- they're
+    used as no-op placeholders by Tecendil's rules (e.g. the trailing
+    `{}` in `"ri" -> "{roomen}[dot-above]{}"`).
+    """
+    # Strip sentinel markers before tokenizing -- the contents are
+    # already pre-positioned symbolic tokens that should pass through.
+    symbolic = symbolic.replace(SENTINEL_OPEN, "").replace(SENTINEL_CLOSE, "")
     parts = []
+    upper_next = False
     for kind, value in tokenize_symbolic(symbolic):
+        if kind == "text" and value == UPPER_MARK:
+            upper_next = True
+            continue
         if kind == "tengwa":
-            if value == "dash":
-                continue
+            if value == "" or value == "dash":
+                continue  # no-op placeholder
             cp = NAME_TO_CSUR.get(value)
             if cp is None:
                 raise ValueError(f"Unknown tengwa name: {value!r}")
+            if upper_next:
+                cp = uppercase_tengwa(cp)
+                upper_next = False
             parts.append(cp)
         elif kind == "tehta":
             cp = NAME_TO_CSUR.get(value)
@@ -454,7 +698,10 @@ def to_csur(symbolic):
 
 
 def transliterate(text, mode):
+    text = handle_capitals(text)
     text = apply_preprocess(text, mode.get("preprocess", {}))
+    if mode.get("normalizeVowels"):
+        text = normalize_vowels(text)
     text = apply_word_overrides(text, mode.get("words", {}))
     rules = compile_rules(mode.get("map", {}))
     symbolic = apply_rules(text, rules)
@@ -500,7 +747,7 @@ def main():
             elif 0xE000 <= o <= 0xE07F:
                 cps.append(f"U+{o:04X}")
             else:
-                cps.append(f"U+{o:04X}")
+                cps.append(f"U+{o:04X}({c!r})")
         print(" ".join(cps))
     else:
         print(out)

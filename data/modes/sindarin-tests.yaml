@@ -1,3 +1,12 @@
+# Regression fixtures for scripts/transliterate.py against Tecendil's
+# Sindarin (general) mode. Each `output` is captured by running the
+# input through https://www.tecendil.com with mode set to Sindarin and
+# copying the result.
+#
+# To add a case: paste the input into Tecendil, copy its output, and
+# fill in the `output` field below. Re-run scripts/test_transliterate.py
+# to confirm our engine matches.
+
  - input: "gwain dwedh angwedh"
    output: "  "
 
@@ -9,3 +18,54 @@
 
  - input: "daro dîn"
    output: "  "
+
+ # Coverage additions -- output fields to be filled from Tecendil.
+
+ # Tests medial 'a' (default vowel) and final 'r' (the r$ rule -> {oore}).
+ - input: "aglar"
+   output: ""
+
+ # Tests the 'words' override: Tecendil rewrites Rohan -> Rochan, Rohir
+ # -> Rochir, Rohirrim -> Rochirrim before rule application.
+ - input: "Rohan"
+   output: ""
+
+ - input: "rohan"
+   output: ""
+
+ # Tests the 'words' override: arnoediad maps to an explicit symbolic
+ # sequence rather than being processed by the rule map.
+ - input: "arnoediad"
+   output: ""
+
+ # Tests the '^lh' rule ({alda}) and the long-vowel pattern with 'aara'
+ # (LONG CARRIER, U+E02C).
+ - input: "lhûg"
+   output: ""
+
+ # Tests the '^rh' rule ({arda}) and long û.
+ - input: "rhûn"
+   output: ""
+
+ # Tests 'ae' and 'ei' diphthongs.
+ - input: "aear eithel"
+   output: " "
+
+ # Tests mid-word 'angw' -- the rule we previously misjudged as dead
+ # code. dangweth "answer" (PM/395) has 'angw' starting at position 1,
+ # where '^ang' does not match, so the 'angw' rule should fire.
+ - input: "dangweth"
+   output: ""
+
+ # Tests geminate 'nn' (e.g. ennyn "doors"; pennas "history").
+ - input: "pennas"
+   output: ""
+
+ # Tests 'ui' diphthong followed by a consonant.
+ - input: "cuiol"
+   output: ""
+
+ # Multi-syllable with mixed vowels; canonical Sindarin proper name
+ # (Gilthoniel from A Elbereth).
+ - input: "gilthoniel"
+   output: ""

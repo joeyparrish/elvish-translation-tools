@@ -45,7 +45,13 @@ MODES_DIR = os.path.join(BASE, "data", "modes")
 # (mode-name-for-engine, fixture-file)
 FIXTURES = [
     ("sjn", os.path.join(MODES_DIR, "sindarin-tests.yaml")),
+    ("qya", os.path.join(MODES_DIR, "quenya-tests.yaml")),
 ]
+
+
+def has_output(case):
+    """A case is testable iff its output field is non-empty."""
+    return bool(case.get("output"))
 
 
 def fmt_codepoints(s):
@@ -79,7 +85,11 @@ def main():
             print(f"No test cases in {fixture_path}", file=sys.stderr)
             continue
         print(f"--- {os.path.basename(fixture_path)} (mode: {mode_name}) ---")
+        skipped = 0
         for case in cases:
+            if not has_output(case):
+                skipped += 1
+                continue
             inp = case["input"]
             expected = case["output"]
             total += 1
@@ -99,6 +109,8 @@ def main():
                 failures += 1
             if result.stderr:
                 print(f"           stderr: {result.stderr.strip()}")
+        if skipped:
+            print(f"  ({skipped} case(s) skipped: empty output -- awaiting Tecendil capture)")
         print()
 
     print(f"{total - failures}/{total} passed")

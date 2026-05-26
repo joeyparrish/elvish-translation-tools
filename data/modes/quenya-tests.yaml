@@ -1,0 +1,48 @@
+# Regression fixtures for scripts/transliterate.py against Tecendil's
+# Quenya mode (tehtarFollow:false -- tehtar attach to the PRECEDING
+# tengwa). Each `output` is captured by running the input through
+# https://www.tecendil.com with mode set to Quenya and copying the
+# result.
+#
+# Quenya mode is the primary test for the engine's tehtarFollow:false
+# branch; without these fixtures we have no regression coverage for
+# Quenya orthography at all.
+
+ # Basic Quenya word; tests vowel-on-preceding-tengwa placement.
+ - input: "elen"
+   output: ""
+
+ # Long á and ë (with diaeresis); tests long carrier (aara) handling
+ # under tehtarFollow:false.
+ - input: "namárië"
+   output: ""
+
+ # Less common consonant combination; tests c/qu treatment.
+ - input: "alcarin"
+   output: ""
+
+ # Diphthong 'ai' in Quenya.
+ - input: "aiya"
+   output: ""
+
+ # The canonical Quenya example referenced in Everson's CSUR proposal.
+ # In Quenya mode renders as [SI][L][MA][RI][L][I][L][LI][ON] glyph
+ # clusters.
+ - input: "silmaril"
+   output: ""
+
+ # qu treatment (Quenya 'qu' is one tengwa: {quesse}).
+ - input: "quenta"
+   output: ""
+
+ # Proper name with initial capital; tests preservation of word-start
+ # behavior under capitalization.
+ - input: "Eldamar"
+   output: ""
+
+ - input: "eldamar"
+   output: ""
+
+ # Tengwar's own Quenya name. Tests w-handling.
+ - input: "tengwa"
+   output: ""
