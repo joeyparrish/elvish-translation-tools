@@ -192,6 +192,32 @@ To render escape-encoded Tengwar as literal glyphs (requires Tengwar Telcontar o
     echo '' | python3 ${CLAUDE_SKILL_DIR}/scripts/preview.py -
     python3 ${CLAUDE_SKILL_DIR}/scripts/preview.py --yaml path/to/sjn-translations.yaml
 
+## Editing translation YAML files safely
+
+When generating or modifying entries in a translation YAML file (typically `sjn-translations.yaml`), the agent is responsible for emitting valid YAML. Common ways to break it:
+
+**Never embed unescaped double quotes inside a double-quoted YAML string.** This is the most common failure. When citing source material, never write:
+
+    source: "LotR/0307 (in lammen, "lasto beth lammen")"
+    note: "Originally "hasto" (intended pause)."
+
+The second `"` closes the string and YAML rejects the rest of the line. Use one of these instead:
+
+- Single quotes around the inner phrase: `source: "LotR/0307 (in lammen, 'lasto beth lammen')"`
+- Backslash-escape the inner quotes: `source: "LotR/0307 (in lammen, \"lasto beth lammen\")"`
+- Restructure to avoid embedded quotes entirely: `source: "LotR/0307 (in the lammen phrase)"`
+
+The single-quote-inside-double-quote form is usually the most readable and is the preferred style for this project.
+
+**Other YAML safety rules when generating entries:**
+
+- Don't put a colon followed by a space inside an unquoted scalar — YAML will read it as a mapping. Always quote strings that contain `: ` or any other YAML special characters (`#`, `&`, `*`, `!`, `|`, `>`, `'`, `"`, `%`, `@`, leading `-`/`?`/`,`).
+- Preserve indentation exactly. The schema uses 1-space for list-item dashes and 5-space indent for nested-map keys.
+- After generating any entry, run `python3 -c "import yaml; yaml.safe_load(open('path.yaml'))"` to verify the file parses.
+- When modifying an existing entry that contains Tengwar PUA characters, read the file first with the Read tool (which preserves the chars) before using Edit. Don't try to type the PUA chars from memory.
+
+**For values containing Tengwar codepoints**: store as `\uXXXX` escape sequences (see "Producing Tengwar" above), never as literal PUA characters. This avoids invisible-character bugs and makes the YAML reviewable.
+
 ## Review checklist
 
 For each entry being reviewed or proposed:
@@ -215,6 +241,7 @@ For each entry being reviewed or proposed:
 | "Mutations are too complex, skip them" | Wrong mutation = visibly broken Sindarin. Apply per the tables. |
 | "The user will fix it later" | Make the right call now or defer explicitly. Don't ship guesses. |
 | "It's just a UI string, low stakes" | Low stakes means more reason to be honest about confidence, not less. |
+| "I'll add a citation with the phrase quoted" | Watch the YAML quoting. Embedded double quotes inside a double-quoted string break the file. Use single quotes for the inner phrase, or paraphrase. See 'Editing translation YAML files safely'. |
 
 ## Real-world failure modes (from prior review)
 
