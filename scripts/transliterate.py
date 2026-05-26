@@ -698,6 +698,10 @@ def to_csur(symbolic):
 
 
 def transliterate(text, mode):
+    # Protect UI placeholders like [VARIABLE] (all-caps + underscores
+    # inside square brackets) so they pass through verbatim instead
+    # of being parsed as tehta tokens or mangled by handle_capitals.
+    placeholders, text = extract_placeholders(text)
     text = handle_capitals(text)
     text = apply_preprocess(text, mode.get("preprocess", {}))
     if mode.get("normalizeVowels"):
@@ -706,7 +710,33 @@ def transliterate(text, mode):
     rules = compile_rules(mode.get("map", {}))
     symbolic = apply_rules(text, rules)
     positioned = position_tehtar(symbolic, mode.get("tehtarFollow", False))
-    return to_csur(positioned)
+    out = to_csur(positioned)
+    out = restore_placeholders(out, placeholders)
+    return out
+
+
+PLACEHOLDER_PATTERN = re.compile(r"\[[A-Z][A-Z0-9_]*\]")
+PLACEHOLDER_SENTINEL = "\x02"
+
+
+def extract_placeholders(text):
+    """Replace [VAR] placeholders with sentinel markers; return them too."""
+    placeholders = []
+    def collect(m):
+        placeholders.append(m.group(0))
+        return PLACEHOLDER_SENTINEL
+    new_text = PLACEHOLDER_PATTERN.sub(collect, text)
+    return placeholders, new_text
+
+
+def restore_placeholders(text, placeholders):
+    """Restore [VAR] placeholders from sentinel markers in order."""
+    parts = text.split(PLACEHOLDER_SENTINEL)
+    out = [parts[0]]
+    for ph, part in zip(placeholders, parts[1:]):
+        out.append(ph)
+        out.append(part)
+    return "".join(out)
 
 
 def escape_csur(s):
