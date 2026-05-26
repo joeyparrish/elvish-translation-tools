@@ -709,6 +709,25 @@ def transliterate(text, mode):
     return to_csur(positioned)
 
 
+def escape_csur(s):
+    r"""Render a CSUR string with PUA characters as \uXXXX escapes.
+
+    Non-PUA characters (ASCII letters, spaces, etc.) pass through
+    literally. Tengwar codepoints (U+E000-U+E0FF) become escape
+    sequences. The result is a string that's reviewable in any editor
+    and is identical to its decoded form when read as Python or YAML
+    double-quoted source.
+    """
+    out = []
+    for c in s:
+        o = ord(c)
+        if 0xE000 <= o <= 0xE0FF:
+            out.append(f"\\u{o:04X}")
+        else:
+            out.append(c)
+    return "".join(out)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -724,9 +743,19 @@ def main():
         help="Romanized text to transliterate",
     )
     parser.add_argument(
+        "--literal",
+        action="store_true",
+        help="Emit literal PUA characters instead of \\uXXXX escapes. "
+             "Default output is escaped (reviewable in any editor); "
+             "use --literal only for piping into something that needs "
+             "raw CSUR bytes (e.g. a font-aware preview).",
+    )
+    parser.add_argument(
         "--show-codepoints",
         action="store_true",
-        help="Print U+xxxx codepoint sequence instead of raw characters",
+        help="Diagnostic format: print 'U+xxxx' for each codepoint, "
+             "space-separated. Useful for inspecting output without a "
+             "Tengwar font.",
     )
     args = parser.parse_args()
 
@@ -744,13 +773,15 @@ def main():
             o = ord(c)
             if o == 0x20:
                 cps.append("SPACE")
-            elif 0xE000 <= o <= 0xE07F:
+            elif 0xE000 <= o <= 0xE0FF:
                 cps.append(f"U+{o:04X}")
             else:
                 cps.append(f"U+{o:04X}({c!r})")
         print(" ".join(cps))
-    else:
+    elif args.literal:
         print(out)
+    else:
+        print(escape_csur(out))
 
 
 if __name__ == "__main__":

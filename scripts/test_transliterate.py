@@ -94,7 +94,7 @@ def main():
             expected = case["output"]
             total += 1
             result = subprocess.run(
-                ["python3", ENGINE_PATH, mode_name, inp],
+                ["python3", ENGINE_PATH, mode_name, inp, "--literal"],
                 capture_output=True,
                 text=True,
             )

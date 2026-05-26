@@ -248,15 +248,42 @@ Alternatives and when they might apply:
   Reasonable if the consuming application can ship images instead of
   fonts.
 
-How to edit `tengwar` fields safely:
+How to store CSUR Tengwar in YAML / JSON files:
 
-- Use a CSUR-aware font in your editor (Tengwar Telcontar works in
-  gedit, VS Code with the right font setting, etc.).
-- Use Tecendil to transliterate from romanized → CSUR, then paste the
-  output into the `tengwar` field.
-- Never hand-modify Tengwar PUA characters without a font; they appear
-  as boxes or replacement characters in plain text contexts and editing
-  them blind corrupts the encoding.
+**Use `\uXXXX` escape sequences, not literal PUA characters.** In a
+YAML double-quoted string or a JSON value, write:
+
+    tengwar: ""   # YAML
+    "PAUSE": ""   # JSON
+
+YAML and JSON both decode `\uXXXX` to the literal codepoint at load
+time, so the in-memory representation is the same as if you'd stored
+the literal characters. The escape form has practical advantages:
+
+- **Reviewable in any editor**: GitHub diff view, code review tools,
+  terminals without a CSUR font, file pickers, grep -- all show
+  meaningful text.
+- **Diff-friendly**: a change of one tengwa shows as a 4-character
+  hex-digit change rather than a one-box-into-another-box change.
+- **Tool-safe**: tools that strip "weird whitespace" or normalize
+  Unicode can't silently corrupt the field.
+- **Greppable**: you can `grep '\\uE051' sjn.json` to find every
+  entry that uses the doubler.
+
+Literal PUA characters are only appropriate when piping into a
+font-aware terminal or editor for visual preview. Use the
+`scripts/preview.py` utility to convert escape-encoded text to
+literal characters on the fly, rather than storing the literal form.
+
+How to produce `tengwar` field contents:
+
+- Use `scripts/transliterate.py` (this framework). Its default output
+  format is escape-encoded.
+- Or use Tecendil's web UI and convert the literal output to escapes
+  before pasting (preview.py works in reverse via decode; or use any
+  ad-hoc hex-encoder).
+- Never invent the Tengwar field from scratch; always derive from the
+  romanized form.
 
 ## Versioning
 

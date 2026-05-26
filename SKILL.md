@@ -174,14 +174,23 @@ Use the bundled transliteration engine instead of hand-typing Tengwar:
     python3 ${CLAUDE_SKILL_DIR}/scripts/transliterate.py qya "<romanized>"
     python3 ${CLAUDE_SKILL_DIR}/scripts/transliterate.py sjn "<romanized>" --show-codepoints
 
-The engine implements Tecendil's Sindarin / Quenya / Beleriand modes (mode files vendored under `${CLAUDE_SKILL_DIR}/data/modes/`). Its output is CSUR Tengwar that can be pasted directly into a `sjn.tengwar` field.
+The engine implements Tecendil's Sindarin / Quenya / Beleriand modes (mode files vendored under `${CLAUDE_SKILL_DIR}/data/modes/`). Its output is CSUR Tengwar codepoints.
+
+**Default output format is `\uXXXX` escape sequences**, not literal PUA characters. This is so the result can be reviewed in any editor and pasted directly into a YAML `sjn.tengwar` double-quoted string or a JSON value. Use `--literal` only to pipe into a font-aware preview, never to store in source files.
 
 When to use:
 
 - **Filling in `sjn.tengwar` for a new entry**: produce the romanized form first (so it's reviewable), then transliterate. Never invent the Tengwar field; always derive it.
 - **Verifying an existing `sjn.tengwar`**: transliterate the entry's `sjn.roman` and compare. A mismatch flags either an old hand-typed entry to update or a roman/Tengwar disagreement worth investigating.
 
-Output is byte-identical to Tecendil for the 24 regression cases in `${CLAUDE_SKILL_DIR}/data/modes/sindarin-tests.yaml` and `quenya-tests.yaml`. Known divergence: the engine does not emit Tecendil's display-only thin-space (U+2009) between words; it uses plain U+0020.
+Output matches Tecendil's deployed engine for the 24 regression cases in `${CLAUDE_SKILL_DIR}/data/modes/sindarin-tests.yaml` and `quenya-tests.yaml`. Known divergences: no thin-space (U+2009) word separator (Tecendil emits it for display only).
+
+## Previewing escape-encoded Tengwar
+
+To render escape-encoded Tengwar as literal glyphs (requires Tengwar Telcontar or another CSUR font installed):
+
+    echo '' | python3 ${CLAUDE_SKILL_DIR}/scripts/preview.py -
+    python3 ${CLAUDE_SKILL_DIR}/scripts/preview.py --yaml path/to/sjn-translations.yaml
 
 ## Review checklist
 
