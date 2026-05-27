@@ -192,6 +192,18 @@ To render escape-encoded Tengwar as literal glyphs (requires Tengwar Telcontar o
     echo '' | python3 ${CLAUDE_SKILL_DIR}/scripts/preview.py -
     python3 ${CLAUDE_SKILL_DIR}/scripts/preview.py --yaml path/to/sjn-translations.yaml
 
+## Bulk-regenerating tengwar fields
+
+After revising one or more `sjn.roman` fields in a translation YAML, sync the corresponding `sjn.tengwar` fields:
+
+    python3 ${CLAUDE_SKILL_DIR}/scripts/regen_tengwar.py path/to/sjn-translations.yaml
+    python3 ${CLAUDE_SKILL_DIR}/scripts/regen_tengwar.py path/to/qya-translations.yaml --mode qya
+    python3 ${CLAUDE_SKILL_DIR}/scripts/regen_tengwar.py path/to/sjn-translations.yaml --dry-run
+
+For every entry with a non-empty `sjn.roman`, runs the romanized form through `transliterate.py` and replaces the value inside `tengwar: "..."` with the escape-encoded result. Uses targeted text editing -- comments, indentation, blank lines, and surrounding content are preserved exactly.
+
+Use this any time you change a `roman` field; never hand-update a `tengwar` field.
+
 ## Editing translation YAML files safely
 
 When generating or modifying entries in a translation YAML file (typically `sjn-translations.yaml`), the agent is responsible for emitting valid YAML. Common ways to break it:
