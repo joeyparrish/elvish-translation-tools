@@ -1,7 +1,7 @@
 ---
 name: elvish-translation-tools
 description: Use when translating, reviewing, or maintaining UI / document translations into Sindarin or Quenya (Tolkien's Elvish languages). Triggers include: working with a Sindarin / sjn / Quenya / qya locale file; asked to translate an English string into Elvish; reviewing existing Elvish translations for correctness; adding new strings to an existing Elvish translation. Uses the bundled Eldamo lexicon and grammar references to ground every choice in attested or documented forms.
-allowed-tools: Bash(python3 */elvish-translation-tools/scripts/lookup.py *), Bash(python3 */elvish-translation-tools/scripts/transliterate.py *)
+allowed-tools: Bash(python3 */elvish-translation-tools/scripts/lookup.py *), Bash(python3 */elvish-translation-tools/scripts/transliterate.py *), Bash(python3 */elvish-translation-tools/scripts/regen_tengwar.py *), Bash(python3 */elvish-translation-tools/scripts/preview.py *)
 ---
 
 # Elvish Translation Tools

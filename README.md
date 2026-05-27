@@ -1,12 +1,12 @@
 # Elvish Translation Tools
 
 A [Claude Code][] skill for translating, reviewing, and maintaining
-translations into Tolkien's Elvish languages (Sindarin and Quenya). Every
-choice is grounded in the [Eldamo][] lexicon (Paul Strack); the skill
-won't propose vocabulary it can't cite.
+translations into Tolkien's Elvish languages (Sindarin and Quenya).
+Every choice is grounded in the [Eldamo][] lexicon (Paul Strack); the
+skill won't propose vocabulary it can't cite.
 
-This repo is the skill itself plus the data and tools it relies on. The
-skill is reusable across any translation project; project-specific
+This repo is the skill itself plus the data and tools it relies on.
+The skill is reusable across any translation project; project-specific
 workspaces (translation files, project glossaries) live in their own
 repos and reference this one.
 
@@ -39,33 +39,47 @@ original creator cited.
 
 ## Standalone use of the tools
 
-The lookup tool also works without invoking the skill, useful for ad hoc
-queries:
+All scripts work without invoking the skill, useful for ad hoc queries
+or batch processing of translation files:
 
-    python3 scripts/lookup.py check lambë      # attestation check
-    python3 scripts/lookup.py search halt      # find by English meaning
-    python3 scripts/lookup.py lookup dar-      # exact lemma lookup
-    python3 scripts/lookup.py forms daro       # search attested surface forms
+    # Attestation lookup over the Eldamo lexicon
+    python3 scripts/lookup.py check lambë
+    python3 scripts/lookup.py search halt
+    python3 scripts/lookup.py forms daro
+
+    # Romanized -> CSUR Tengwar (default: \uXXXX escapes)
+    python3 scripts/transliterate.py sjn "daro dîn"
+    python3 scripts/transliterate.py qya "namárië"
+
+    # Bulk-regen tengwar fields in a schema-following YAML
+    python3 scripts/regen_tengwar.py path/to/translations.yaml
+
+    # Render escape-encoded Tengwar to literal PUA for a font-aware terminal
+    echo '' | python3 scripts/preview.py -
 
 See [`scripts/README.md`][scripts-readme] for the full subcommand
 reference and [`references/README.md`][references-readme] for the
-grammar / mutation / schema documentation.
+grammar / mutation / schema / codepoint documentation.
 
 ## Layout
 
 - [`SKILL.md`][SKILL.md] -- the skill itself; loaded by Claude Code.
-- `data/` -- compact TSV extracts of the [Eldamo][] lexicon, split by
-  language family. Committed so the tools work out of the box.
-- `scripts/` -- `extract.py` regenerates the TSVs from upstream
-  [Eldamo][]; `lookup.py` provides lookup / search / attestation-check
-  / cognates / forms subcommands over the TSVs.
-- `references/` -- hand-written grammar, mutation, and translation
-  source-file schema references, plus instructions for cloning upstream
-  [Eldamo][] when the TSVs need to be regenerated.
+- `data/` -- compact TSV extracts of the [Eldamo][] lexicon (committed,
+  so the tools work out of the box) and Tecendil-format mode files
+  for Sindarin / Quenya / Beleriand transliteration.
+- `scripts/` -- `extract.py` (regenerate TSVs from upstream Eldamo),
+  `lookup.py` (attestation), `transliterate.py` (romanized -> CSUR),
+  `regen_tengwar.py` (bulk-regen YAML tengwar fields), `preview.py`
+  (escape -> literal for font-aware display), `test_transliterate.py`
+  (regression suite against empirical Tecendil output).
+- `references/` -- hand-written grammar, mutation, CSUR codepoint, and
+  translation source-file schema references, plus instructions for
+  cloning upstream [Eldamo][] when the TSVs need to be regenerated.
 
 ## Requirements
 
-- Python 3 (standard library only).
+- Python 3 (standard library only for most scripts;
+  `test_transliterate.py` uses PyYAML).
 - [Claude Code][] for the skill itself; the scripts work standalone.
 
 ## Related
@@ -73,10 +87,14 @@ grammar / mutation / schema documentation.
 - [Eldamo][] (Paul Strack), CC-BY 4.0; the source the TSVs are derived
   from. Eldamo covers Quenya, Sindarin, Noldorin, Gnomish, and earlier
   conceptual stages with reliability markers.
+- [Tecendil][] (Arno Gourdol); the transliterator whose deployed
+  rule semantics this skill's `transliterate.py` reproduces. Mode
+  files vendored from arnog/tecendil-js (MIT).
 
 
 [Claude Code]: https://claude.com/claude-code
 [Eldamo]: https://github.com/pfstrack/eldamo
+[Tecendil]: https://www.tecendil.com
 [SKILL.md]: ./SKILL.md
 [scripts-readme]: ./scripts/README.md
 [references-readme]: ./references/README.md
