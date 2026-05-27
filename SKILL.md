@@ -92,14 +92,11 @@ The most frequent error is reaching for a Quenya word that looks like the right 
 
 | Wrong | Correct Sindarin | Note |
 |-------|------------------|------|
-| `lambë` "language" | `lam` (sg.) / `laim`, `lammath` (pl. / coll.) | `lambë` is Quenya. |
+| `lambë` "language" | `lam` (no attested plural; Neo-Sindarin reconstruction: `laim`) | `lambë` is Quenya. |
 | `la` "not" | `ú-` (prefix, with mutation) or `law` / `baw` | `la` is Quenya. |
 | `panta` "open" | `pant` | `panta` is Quenya. |
 | `lintië` "speed" | `lint` "swift" (adj.; no direct attested noun) | `lintië` is Quenya. |
 | `enquet-` "repeat" | No attested Sindarin verb; use `ad-` prefix on a verb of doing/saying | `enquet-` is Quenya AND deprecated in Eldamo. |
-| `hasto` for "pause" | `daro` (attested imperative of `dar-` "halt") | `hasto` is attested but means "hack through". |
-| `neth` for "number" | `gonod` (count) / `nediad` (counting) | `neth` means "girl, youth" in Sindarin. |
-| `abont` "backwards" | `adel` "behind" | `abont` is Gnomish, not Sindarin. |
 
 When in doubt, `check` the candidate.
 
@@ -237,7 +234,7 @@ For each entry being reviewed or proposed:
 1. **Attestation**: every element checked with `lookup.py check`. Status recorded.
 2. **Language purity**: no Quenya headwords used as Sindarin (unless explicitly intentional). Run `cognates` if in doubt.
 3. **Deprecation**: nothing flagged DEPRECATED in Eldamo (e.g. `meiras`, `enquet-`).
-4. **Wrong-meaning attested forms**: the form exists but means something else? (`hasto`, `neth`.) `check` will surface this via the surface-form listings.
+4. **Wrong-meaning attested forms**: the form exists but means something else? `check` will surface this via the surface-form listings.
 5. **Mutations applied** at element boundaries per the mutation tables.
 6. **Word order**: adjective follows noun; preposition precedes; verb position natural.
 7. **Project vocabulary consistency**: recurring lexemes match what the project has already used (e.g. always `northo` for "play").
@@ -261,8 +258,8 @@ These came up reviewing an existing UI translation. Patterns to recognize:
 
 - **Quenya intrusion via familiarity**: `lambë` for "language" (Sindarin: `lam`). `panta` for "open" (Sindarin: `pant`). The Quenya forms are more famous from fan material; the Sindarin equivalents are less seen but correct.
 - **Sindarin morphology on Quenya stem**: `enqueto` from Quenya `enquet-` + Sindarin imperative `-o`. The grammar is Sindarinized but the lexeme is Quenya. Always start from a Sindarin headword.
-- **Attested form, wrong meaning**: `hasto` is real Sindarin but means "hack through" (root SYAD), not "pause". `neth` is real Sindarin but means "girl / youth", not "number". The lookup tool catches these via the surface-form listing.
-- **Gnomish-as-Sindarin**: `abont` "backwards" and `unt` "nothing" are Gnomish (1910s), not Sindarin. May be deliberate revivals; flag them.
+- **Attested form, wrong meaning**: an attested Sindarin form can exist but mean something completely different. The lookup tool catches these via the surface-form listing.
+- **Gnomish-as-Sindarin**: `unt` "nothing" is Gnomish (1910s), not Sindarin. May be a deliberate revival; flag it.
 - **Deprecated Neo-Sindarin**: `meiras` for "value" was coined by Paul Strack but flagged deprecated in Eldamo. The tool surfaces this.
 
 ## Project-specific application

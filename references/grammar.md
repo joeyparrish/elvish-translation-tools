@@ -111,8 +111,8 @@ Examples: `aran` → `erain` "kings"; `onod` → `enyd` "ents"; `orch` → `yrch
 
 - Sindarin negation uses `ú-` (with mutation) or independent `law` / `baw`.
   Do NOT use Quenya `la` (a common mistake).
-- "Language" in Sindarin is `lam` (pl. `laim` / `lammath`), not Quenya
-  `lambë`.
+- "Language" in Sindarin is `lam` (no attested plural; Neo-Sindarin
+  reconstruction follows regular i-mutation: `laim`), not Quenya `lambë`.
 - "Open" is Sindarin `pant`, not Quenya `panta`.
 - For "in/within", use `mi` (no mutation) or `vi` (lenited), not unattested
   forms like `bir`.
