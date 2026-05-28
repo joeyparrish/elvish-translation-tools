@@ -37,6 +37,11 @@ The skill stays honest about confidence. Anything coined is flagged as
 coinage; anything reconstructed is flagged as Neo-Sindarin with the
 original creator cited.
 
+## Worked example
+
+For a complete example of a translation project built with this skill, see my
+[full translation of Shaka Player's UI into Sindarin](https://github.com/joeyparrish/shaka-sjn-translation).
+
 ## Standalone use of the tools
 
 All scripts work without invoking the skill, useful for ad hoc queries
@@ -78,8 +83,7 @@ grammar / mutation / schema / codepoint documentation.
 
 ## Requirements
 
-- Python 3 (standard library only for most scripts;
-  `test_transliterate.py` uses PyYAML).
+- Python 3 (standard library only for lookup scripts; others use PyYAML).
 - [Claude Code][] for the skill itself; the scripts work standalone.
 
 ## Related
