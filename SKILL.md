@@ -1,11 +1,6 @@
 ---
 name: elvish-translation-tools
 description: Use when translating, reviewing, or maintaining UI / document translations into Sindarin or Quenya (Tolkien's Elvish languages). Triggers include: working with a Sindarin / sjn / Quenya / qya locale file; asked to translate an English string into Elvish; reviewing existing Elvish translations for correctness; adding new strings to an existing Elvish translation. Uses the bundled Eldamo lexicon and grammar references to ground every choice in attested or documented forms.
-allowed-tools:
-  - Bash(python3 ~/.claude/skills/elvish-translation-tools/scripts/lookup.py *)
-  - Bash(python3 ~/.claude/skills/elvish-translation-tools/scripts/transliterate.py *)
-  - Bash(python3 ~/.claude/skills/elvish-translation-tools/scripts/regen_tengwar.py *)
-  - Bash(python3 ~/.claude/skills/elvish-translation-tools/scripts/preview.py *)
 ---
 
 # Elvish Translation Tools
@@ -38,7 +33,7 @@ Use when an entry (or a whole file) already exists and you're checking it.
 
 1. For each Elvish word in the entry, run:
    ```
-   python3 ${CLAUDE_SKILL_DIR}/scripts/lookup.py check <word>
+   ${CLAUDE_SKILL_DIR}/scripts/lookup.py check <word>
    ```
    This reports: where the word is attested, in what language, and any warnings (Quenya-as-Sindarin, deprecated, Gnomish revival, etc.).
 2. Apply the review checklist below.
@@ -51,14 +46,14 @@ Use when adding new entries (drift from upstream source) or producing a translat
 
 1. Search the lexicon for relevant words:
    ```
-   python3 ${CLAUDE_SKILL_DIR}/scripts/lookup.py search <english-substring>
+   ${CLAUDE_SKILL_DIR}/scripts/lookup.py search <english-substring>
    ```
    For false-friend awareness across languages, add `--any-lang`.
 2. Check existing project vocabulary for recurring lexemes (e.g. if the project consistently uses `northo` for "play", reuse it; don't invent a new word).
 3. Propose candidates ranked: attested > Neo-Sindarin > defensible reconstruction > coinage. Present alternatives, not single answers, when more than one is plausible.
 4. Verify each component:
    ```
-   python3 ${CLAUDE_SKILL_DIR}/scripts/lookup.py check <proposed-word>
+   ${CLAUDE_SKILL_DIR}/scripts/lookup.py check <proposed-word>
    ```
 5. Apply mutation rules at element boundaries (see Mutations section).
 6. Fill out the project's schema fields if the file uses one. At minimum: `sjn.roman`, `sjn.literal`, and `elements[]` with `attestation` and `source` per element.
@@ -76,7 +71,7 @@ Path: `${CLAUDE_SKILL_DIR}/scripts/lookup.py`. Reads compact TSVs extracted from
 | `cognates <lemma>` | Show related forms across Sindarin / Noldorin / Quenya. False-friend detection. |
 | `forms <pattern>` | Search attested inflected / compound surface forms. |
 
-Run `python3 ${CLAUDE_SKILL_DIR}/scripts/lookup.py --help` for full options.
+Run `${CLAUDE_SKILL_DIR}/scripts/lookup.py --help` for full options.
 
 ## Languages and how the tool labels them
 
@@ -171,9 +166,9 @@ The `sjn.tengwar` field uses CSUR (ConScript Unicode Registry) Tengwar at U+E000
 
 Use the bundled transliteration engine instead of hand-typing Tengwar:
 
-    python3 ${CLAUDE_SKILL_DIR}/scripts/transliterate.py sjn "<romanized>"
-    python3 ${CLAUDE_SKILL_DIR}/scripts/transliterate.py qya "<romanized>"
-    python3 ${CLAUDE_SKILL_DIR}/scripts/transliterate.py sjn "<romanized>" --show-codepoints
+    ${CLAUDE_SKILL_DIR}/scripts/transliterate.py sjn "<romanized>"
+    ${CLAUDE_SKILL_DIR}/scripts/transliterate.py qya "<romanized>"
+    ${CLAUDE_SKILL_DIR}/scripts/transliterate.py sjn "<romanized>" --show-codepoints
 
 The engine implements Tecendil's Sindarin / Quenya / Beleriand modes (mode files vendored under `${CLAUDE_SKILL_DIR}/data/modes/`). Its output is CSUR Tengwar codepoints.
 
@@ -190,16 +185,16 @@ Output matches Tecendil's deployed engine for the 24 regression cases in `${CLAU
 
 To render escape-encoded Tengwar as literal glyphs (requires Tengwar Telcontar or another CSUR font installed):
 
-    echo '' | python3 ${CLAUDE_SKILL_DIR}/scripts/preview.py -
-    python3 ${CLAUDE_SKILL_DIR}/scripts/preview.py --yaml path/to/sjn-translations.yaml
+    echo '' | ${CLAUDE_SKILL_DIR}/scripts/preview.py -
+    ${CLAUDE_SKILL_DIR}/scripts/preview.py --yaml path/to/sjn-translations.yaml
 
 ## Bulk-regenerating tengwar fields
 
 After revising one or more `sjn.roman` fields in a translation YAML, sync the corresponding `sjn.tengwar` fields:
 
-    python3 ${CLAUDE_SKILL_DIR}/scripts/regen_tengwar.py path/to/sjn-translations.yaml
-    python3 ${CLAUDE_SKILL_DIR}/scripts/regen_tengwar.py path/to/qya-translations.yaml --mode qya
-    python3 ${CLAUDE_SKILL_DIR}/scripts/regen_tengwar.py path/to/sjn-translations.yaml --dry-run
+    ${CLAUDE_SKILL_DIR}/scripts/regen_tengwar.py path/to/sjn-translations.yaml
+    ${CLAUDE_SKILL_DIR}/scripts/regen_tengwar.py path/to/qya-translations.yaml --mode qya
+    ${CLAUDE_SKILL_DIR}/scripts/regen_tengwar.py path/to/sjn-translations.yaml --dry-run
 
 For every entry with a non-empty `sjn.roman`, runs the romanized form through `transliterate.py` and replaces the value inside `tengwar: "..."` with the escape-encoded result. Uses targeted text editing -- comments, indentation, blank lines, and surrounding content are preserved exactly.
 
